@@ -1,4 +1,3 @@
-from re import S
 import numpy as np
 import cmath
 import math
@@ -42,6 +41,8 @@ class User:
         self.h2u = 0
         self.w = 0
 
+        self.SINRThreshold = 6  # in dB
+
 
 class Environment:
     def __init__(self) -> None:
@@ -55,6 +56,7 @@ class Environment:
         self.Irs1ToIrs2 = 10  # The Distance Between IRS1 & IRS2
 
         self.Users = []
+        self.SINR = []
 
         # Generate Random Channel Coefficient Matrix(es)
         self.Hs1 = Random_Complex_Mat(self.M1, self.N) / self.Irs1ToAntenna
@@ -92,11 +94,8 @@ class Environment:
         self.Users.append(Usr)
         return Usr
 
-    def SumRate(self):
-        # Sumrate =
-        pass
-
-    def Reward(state):
+    def Reward(self):
+        reward = SumRate(CalculateSINR(self))
         pass
 
 
@@ -158,6 +157,10 @@ def CalculateSINR(env: Environment):
         SINR.append((i[1].h))
 
     return SINR
+
+
+def SumRate(SINR: list):
+    return sum(math.log2(1 + i) for i in SINR)
 
 
 def Run():

@@ -1,3 +1,4 @@
+from re import S
 import numpy as np
 import cmath
 import math
@@ -16,28 +17,34 @@ def Random_Complex_Mat(Row: int, Col: int):
 
 
 class User:
-    def __init__(self, d1: float, d2: float, d3: float, NoiseVar: float) -> None:
+    def __init__(
+        self,
+        d1: float,
+        d2: float,
+        d3: float,
+        NoiseVar: float,
+        LosToAntenna: bool,
+        LosToIrs1: bool,
+        LosToIrs2: bool,
+    ) -> None:
+
         self.DistanceFromAntenna = d1
         self.DistanceFromIrs1 = d2
         self.DistanceFromIrs2 = d3
         self.NoisePower = NoiseVar
 
-        self.LosToAntenna = True
-        self.LosToIrs1 = True
-        self.LosToIrs2 = True
+        self.LosToAntenna = LosToAntenna
+        self.LosToIrs1 = LosToIrs1
+        self.LosToIrs2 = LosToIrs2
 
-    def LosToAntennaFunc(self, Trigger: bool) -> None:
-        self.LosToAntenna = Trigger
-
-    def LosToIrs1Func(self, Trigger: bool) -> None:
-        self.LosToIrs1 = Trigger
-
-    def LosToIrs2Func(self, Trigger: bool) -> None:
-        self.LosToIrs2 = Trigger
+        self.hsu = 0
+        self.h1u = 0
+        self.h2u = 0
+        self.w = 0
 
 
 class Environment:
-    def __init__(self, User1: User) -> None:
+    def __init__(self) -> None:
         self.N = 5  # Number of Antennas
         self.M1 = 4  # Number of Elements of IRS1
         self.M2 = 4  # Number of Elements of IRS1
@@ -47,67 +54,119 @@ class Environment:
         self.Irs2ToAntenna = 10  # The Distance Between IRS2 & Antenna
         self.Irs1ToIrs2 = 10  # The Distance Between IRS1 & IRS2
 
+        self.Users = []
+
         # Generate Random Channel Coefficient Matrix(es)
         self.Hs1 = Random_Complex_Mat(self.M1, self.N) / self.Irs1ToAntenna
         self.Hs2 = Random_Complex_Mat(self.M2, self.N) / self.Irs2ToAntenna
-        self.Hs12 = Random_Complex_Mat(self.M2, self.M1) / self.Irs1ToIrs2
-
-        # Generate Matrixes for User 1
-        if User1.LosToAntenna:
-            self.hsu1 = Random_Complex_Mat(1, self.N) / User1.DistanceFromAntenna
-        else:
-            self.hsu1 = 0
-
-        if User1.LosToIrs1:
-            self.h1u1 = Random_Complex_Mat(1, self.M1) / User1.DistanceFromIrs1
-        else:
-            self.h1u1 = 0
-
-        if User1.LosToIrs2:
-            self.h2u1 = Random_Complex_Mat(1, self.M2) / User1.DistanceFromIrs2
-        else:
-            self.h2u1 = 0
-
-        # Generate Matrixes for User 2
-        # if User2.LosToAntenna:
-        #     self.hsu2 = Random_Complex_Mat(1, self.N) / User2.DistanceFromAntenna
-        # else:
-        #     self.hsu2 = 0
-
-        # if User2.LosToIrs1:
-        #     self.h1u2 = Random_Complex_Mat(1, self.M1) / User2.DistanceFromIrs1
-        # else:
-        #     self.h1u2 = 0
-
-        # if User2.LosToIrs2:
-        #     self.h2u2 = Random_Complex_Mat(1, self.M2) / User2.DistanceFromIrs2
-        # else:
-        #     self.h2u2 =
+        self.H12 = Random_Complex_Mat(self.M2, self.M1) / self.Irs1ToIrs2
+        self.H21 = np.conjugate(np.transpose(self.H12))
 
         # Generate Initial IRS Coefficient Matrix(es)
         self.Psi1 = np.diag(Random_Complex_Mat(1, self.M1)[0])
         self.Psi2 = np.diag(Random_Complex_Mat(1, self.M2)[0])
-        # self.Psi1 = Random_Complex_Mat(1, self.M1)
+
+    def CreateUser(
+        self,
+        d1: float,
+        d2: float,
+        d3: float,
+        NoiseVar: float,
+        LosToAntenna: bool,
+        LosToIrs1: bool,
+        LosToIrs2: bool,
+    ):
+        Usr = User(d1, d2, d3, NoiseVar, LosToAntenna, LosToIrs1, LosToIrs2)
+
+        # Generate Matrixes for User
+        if Usr.LosToAntenna:
+            Usr.hsu = Random_Complex_Mat(1, self.N) / Usr.DistanceFromAntenna
+
+        if Usr.LosToIrs1:
+            Usr.h1u = Random_Complex_Mat(1, self.M1) / Usr.DistanceFromIrs1
+
+        if Usr.LosToIrs2:
+            Usr.h2u = Random_Complex_Mat(1, self.M2) / Usr.DistanceFromIrs2
+
+        Usr.w = Random_Complex_Mat(self.N, 1)
+        self.Users.append(Usr)
+        return Usr
+
+    def SumRate(self):
+        # Sumrate =
+        pass
 
     def Reward(state):
         pass
 
 
 class Agent:
-    def __init__(self):
-        pass
+    def __init__(self, env: Environment):
+        self.Env = env
 
     def TakeAction(self):
         pass
 
 
-def Run():
-    u1 = User(17.5, 10, 10, 1)
-    u1.LosToAntennaFunc(False)
-    u1.LosToIrs2Func(False)
+def CalculateSINR(env: Environment):
+    SINR = []
+    for i in enumerate(env.Users):
+        numerator = (
+            np.absolute(
+                np.dot(
+                    i[1].hsu
+                    + np.dot(i[1].h1u, np.dot(env.Psi1, env.Hs1))
+                    + np.dot(i[1].h2u, np.dot(env.Psi2, env.Hs2))
+                    + np.dot(i[1].h2u, np.dot(env.Psi2, env.Hs2))
+                    + np.dot(
+                        np.dot(i[1].h1u, np.dot(env.Psi1, env.H21)),
+                        np.dot(env.Psi2, env.Hs2),
+                    )
+                    + np.dot(
+                        np.dot(i[1].h2u, np.dot(env.Psi2, env.H12)),
+                        np.dot(env.Psi1, env.Hs1),
+                    ),
+                    i[1].w,
+                )
+            )
+            ** 2
+        )
 
-    env = Environment(u1)
-    print(abs(env.Psi1))
+        denominator = i[1].NoiseVar
+        for j in enumerate(env.Users):
+            if j[0] != i[0]:
+                denominator += (
+                    np.absolute(
+                        np.dot(
+                            j[1].hsu
+                            + np.dot(j[1].h1u, np.dot(env.Psi1, env.Hs1))
+                            + np.dot(j[1].h2u, np.dot(env.Psi2, env.Hs2))
+                            + np.dot(j[1].h2u, np.dot(env.Psi2, env.Hs2))
+                            + np.dot(
+                                np.dot(j[1].h1u, np.dot(env.Psi1, env.H21)),
+                                np.dot(env.Psi2, env.Hs2),
+                            )
+                            + np.dot(
+                                np.dot(j[1].h2u, np.dot(env.Psi2, env.H12)),
+                                np.dot(env.Psi1, env.Hs1),
+                            ),
+                            j[1].w,
+                        )
+                    )
+                    ** 2
+                )
+        SINR.append((i[1].h))
+
+    return SINR
+
+
+def Run():
+    env = Environment()
+    U1 = env.CreateUser(17.5, 10, 10, 1, False, True, False)
+    agent = Agent(env)
+
+    # env = Environment(u1)
+    print(abs(U1.w))
     # print(abs(env.h1u1))
     # u2 = Environment.User(23, 15, 15)
     # a = Environment(u1, u2)

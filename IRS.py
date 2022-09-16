@@ -52,6 +52,7 @@ class Environment:
         self.Hs2 = Random_Complex_Mat(self.M2, self.N) / self.Irs2ToAntenna
         self.Hs12 = Random_Complex_Mat(self.M2, self.M1) / self.Irs1ToIrs2
 
+        # Generate Matrixes for User 1
         if User1.LosToAntenna:
             self.hsu1 = Random_Complex_Mat(1, self.N) / User1.DistanceFromAntenna
         else:
@@ -67,6 +68,7 @@ class Environment:
         else:
             self.h2u1 = 0
 
+        # Generate Matrixes for User 2
         # if User2.LosToAntenna:
         #     self.hsu2 = Random_Complex_Mat(1, self.N) / User2.DistanceFromAntenna
         # else:
@@ -82,7 +84,7 @@ class Environment:
         # else:
         #     self.h2u2 =
 
-        # Generate Random Channel Coefficient Matrix(es)
+        # Generate Initial IRS Coefficient Matrix(es)
         self.Psi1 = np.diag(Random_Complex_Mat(1, self.M1)[0])
         self.Psi2 = np.diag(Random_Complex_Mat(1, self.M2)[0])
         # self.Psi1 = Random_Complex_Mat(1, self.M1)

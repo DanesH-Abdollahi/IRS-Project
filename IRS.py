@@ -1,3 +1,5 @@
+from ctypes import sizeof
+from typing import List
 import numpy as np
 import cmath
 import math
@@ -41,7 +43,27 @@ class User:
         self.h2u = 0
         self.w = 0
 
-        self.SINRThreshold = 6  # in dB
+        self.SINRThreshold = 4  # 6 dB approximately
+
+    def GenerateMatrixes(self, env) -> None:
+        if self.LosToAntenna:
+            self.hsu = Random_Complex_Mat(1, env.N) / self.DistanceFromAntenna
+        else:
+            self.hsu = np.zeros((1, env.N))
+
+        if self.LosToIrs1:
+            self.h1u = Random_Complex_Mat(1, env.M1) / self.DistanceFromIrs1
+
+        else:
+            self.h1u = np.zeros((1, env.M1))
+
+        if self.LosToIrs2:
+            self.h2u = Random_Complex_Mat(1, env.M2) / self.DistanceFromIrs2
+
+        else:
+            self.h2u = np.zeros((1, env.M2))
+
+        self.w = Random_Complex_Mat(env.N, 1) * 50
 
 
 class Environment:
@@ -79,24 +101,75 @@ class Environment:
         LosToIrs2: bool,
     ):
         Usr = User(d1, d2, d3, NoiseVar, LosToAntenna, LosToIrs1, LosToIrs2)
-
-        # Generate Matrixes for User
-        if Usr.LosToAntenna:
-            Usr.hsu = Random_Complex_Mat(1, self.N) / Usr.DistanceFromAntenna
-
-        if Usr.LosToIrs1:
-            Usr.h1u = Random_Complex_Mat(1, self.M1) / Usr.DistanceFromIrs1
-
-        if Usr.LosToIrs2:
-            Usr.h2u = Random_Complex_Mat(1, self.M2) / Usr.DistanceFromIrs2
-
-        Usr.w = Random_Complex_Mat(self.N, 1)
+        Usr.GenerateMatrixes(self)
         self.Users.append(Usr)
         return Usr
 
-    def Reward(self):
-        reward = SumRate(CalculateSINR(self))
-        pass
+    def Reward(self) -> float:
+        self.CalculateSINR()
+        reward = self.SumRate()
+        ThresholdPenalty = 1
+        for i in enumerate(self.SINR):
+            if i[1] < self.Users[i[0]].SINRThreshold:
+                reward -= ThresholdPenalty
+
+        return reward
+
+    def CalculateSINR(self):
+        SINR = []
+        for i in enumerate(self.Users):
+            numerator = (
+                np.absolute(
+                    np.dot(
+                        i[1].hsu
+                        + np.dot(i[1].h1u, np.dot(self.Psi1, self.Hs1))
+                        + np.dot(i[1].h2u, np.dot(self.Psi2, self.Hs2))
+                        + np.dot(i[1].h2u, np.dot(self.Psi2, self.Hs2))
+                        + np.dot(
+                            np.dot(i[1].h1u, np.dot(self.Psi1, self.H21)),
+                            np.dot(self.Psi2, self.Hs2),
+                        )
+                        + np.dot(
+                            np.dot(i[1].h2u, np.dot(self.Psi2, self.H12)),
+                            np.dot(self.Psi1, self.Hs1),
+                        ),
+                        i[1].w,
+                    )
+                )
+                ** 2
+            )
+
+            # print(numerator.shape)
+
+            denominator = i[1].NoisePower
+            for j in enumerate(self.Users):
+                if j[0] != i[0]:
+                    denominator += (
+                        np.absolute(
+                            np.dot(
+                                j[1].hsu
+                                + np.dot(j[1].h1u, np.dot(self.Psi1, self.Hs1))
+                                + np.dot(j[1].h2u, np.dot(self.Psi2, self.Hs2))
+                                + np.dot(j[1].h2u, np.dot(self.Psi2, self.Hs2))
+                                + np.dot(
+                                    np.dot(j[1].h1u, np.dot(self.Psi1, self.H21)),
+                                    np.dot(self.Psi2, self.Hs2),
+                                )
+                                + np.dot(
+                                    np.dot(j[1].h2u, np.dot(self.Psi2, self.H12)),
+                                    np.dot(self.Psi1, self.Hs1),
+                                ),
+                                j[1].w,
+                            )
+                        )
+                        ** 2
+                    )
+            SINR.append((numerator / denominator)[0, 0])
+
+        self.SINR = SINR
+
+    def SumRate(self):
+        return sum(math.log2(1 + i) for i in self.SINR)
 
 
 class Agent:
@@ -107,69 +180,22 @@ class Agent:
         pass
 
 
-def CalculateSINR(env: Environment):
-    SINR = []
-    for i in enumerate(env.Users):
-        numerator = (
-            np.absolute(
-                np.dot(
-                    i[1].hsu
-                    + np.dot(i[1].h1u, np.dot(env.Psi1, env.Hs1))
-                    + np.dot(i[1].h2u, np.dot(env.Psi2, env.Hs2))
-                    + np.dot(i[1].h2u, np.dot(env.Psi2, env.Hs2))
-                    + np.dot(
-                        np.dot(i[1].h1u, np.dot(env.Psi1, env.H21)),
-                        np.dot(env.Psi2, env.Hs2),
-                    )
-                    + np.dot(
-                        np.dot(i[1].h2u, np.dot(env.Psi2, env.H12)),
-                        np.dot(env.Psi1, env.Hs1),
-                    ),
-                    i[1].w,
-                )
-            )
-            ** 2
-        )
-
-        denominator = i[1].NoiseVar
-        for j in enumerate(env.Users):
-            if j[0] != i[0]:
-                denominator += (
-                    np.absolute(
-                        np.dot(
-                            j[1].hsu
-                            + np.dot(j[1].h1u, np.dot(env.Psi1, env.Hs1))
-                            + np.dot(j[1].h2u, np.dot(env.Psi2, env.Hs2))
-                            + np.dot(j[1].h2u, np.dot(env.Psi2, env.Hs2))
-                            + np.dot(
-                                np.dot(j[1].h1u, np.dot(env.Psi1, env.H21)),
-                                np.dot(env.Psi2, env.Hs2),
-                            )
-                            + np.dot(
-                                np.dot(j[1].h2u, np.dot(env.Psi2, env.H12)),
-                                np.dot(env.Psi1, env.Hs1),
-                            ),
-                            j[1].w,
-                        )
-                    )
-                    ** 2
-                )
-        SINR.append((i[1].h))
-
-    return SINR
-
-
-def SumRate(SINR: list):
-    return sum(math.log2(1 + i) for i in SINR)
-
-
 def Run():
     env = Environment()
-    U1 = env.CreateUser(17.5, 10, 10, 1, False, True, False)
+    U1 = env.CreateUser(17.5, 10, 10, 1, True, False, False)
+    # U2 = env.CreateUser(23, 15, 15, 1, True, True, True)
+    # U3 = env.CreateUser(5, 5, 5, 1, True, True, True)
     agent = Agent(env)
 
-    # env = Environment(u1)
-    print(abs(U1.w))
+    # print(abs(env.Psi2))
+    # print(env.Users)
+    # print(env.SINR)
+    # env.CalculateSINR()
+    # print(env.SINR)
+    # print(env.SumRate())
+    # print(env.Reward())
+    # print(len(env.SINR[0]))
+    # print(agent.Env.N)
     # print(abs(env.h1u1))
     # u2 = Environment.User(23, 15, 15)
     # a = Environment(u1, u2)

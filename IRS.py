@@ -1,4 +1,5 @@
 from ctypes import sizeof
+from sre_parse import State
 from typing import List
 import numpy as np
 import cmath
@@ -79,6 +80,7 @@ class Environment:
 
         self.Users = []
         self.SINR = []
+        self.SumRate = 0
 
         # Generate Random Channel Coefficient Matrix(es)
         self.Hs1 = Random_Complex_Mat(self.M1, self.N) / self.Irs1ToAntenna
@@ -107,7 +109,7 @@ class Environment:
 
     def Reward(self) -> float:
         self.CalculateSINR()
-        reward = self.SumRate()
+        reward = self.SumRate
         ThresholdPenalty = 1
         for i in enumerate(self.SINR):
             if i[1] < self.Users[i[0]].SINRThreshold:
@@ -167,14 +169,32 @@ class Environment:
             SINR.append((numerator / denominator)[0, 0])
 
         self.SINR = SINR
+        self.SumRate = sum(math.log2(1 + i) for i in self.SINR)
 
-    def SumRate(self):
-        return sum(math.log2(1 + i) for i in self.SINR)
+    # def SumRate(self):
+    #     return sum(math.log2(1 + i) for i in self.SINR)
 
 
 class Agent:
     def __init__(self, env: Environment):
         self.Env = env
+        # print(env.Users[0].w.shape)
+        # t = [i.w[:, 0] for i in env.Users]
+        # print(t)
+        # print(t[0].shape)
+        # print(len(t))
+        self.State = np.concatenate(
+            (
+                np.diag(env.Psi1),  # M1
+                np.diag(env.Psi2),  # M2
+                env.Users[0].w[:, 0],  # N
+                env.SINR,  # Users Num.
+                [env.SumRate],  # 1
+            ),
+            axis=0,
+        )
+
+        print(abs(self.State))
 
     def TakeAction(self):
         pass
@@ -183,11 +203,19 @@ class Agent:
 def Run():
     env = Environment()
     U1 = env.CreateUser(17.5, 10, 10, 1, True, False, False)
-    # U2 = env.CreateUser(23, 15, 15, 1, True, True, True)
+    U2 = env.CreateUser(23, 15, 15, 1, True, True, True)
     # U3 = env.CreateUser(5, 5, 5, 1, True, True, True)
     agent = Agent(env)
 
     # print(abs(env.Psi2))
+
+    # print(np.diag(abs(env.Psi2)))
+    # b = np.ones((5, 1)) * 5
+    # print(b[:, 0].shape)
+    # a = np.concatenate(
+    #     (np.diag(abs(env.Psi2)), np.diag(abs(env.Psi1)), b[:, 0]), axis=0
+    # )
+    # print(a)
     # print(env.Users)
     # print(env.SINR)
     # env.CalculateSINR()

@@ -1,4 +1,5 @@
 from Functions import *
+from cmath import sqrt
 
 
 class User:
@@ -14,7 +15,7 @@ class User:
         self.LosToIrs1 = LosToIrs1
         self.LosToIrs2 = LosToIrs2
         self.Penalty = Penalty
-    
+
         self.hsu = 0
         self.h1u = 0
         self.h2u = 0
@@ -40,4 +41,4 @@ class User:
         else:
             self.h2u = np.zeros((1, env.M2))
 
-        self.w = (Random_Complex_Mat(env.N, 1) / cmath.sqrt(env.N)) * 100
+        self.w = (Random_Complex_Mat(env.N, 1) / sqrt(env.N)) * 100

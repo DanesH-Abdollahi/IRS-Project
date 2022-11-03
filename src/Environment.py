@@ -1,5 +1,6 @@
 from Functions import *
 from User import User
+from cmath import sqrt
 
 
 class Environment:
@@ -27,18 +28,9 @@ class Environment:
         self.Psi1 = np.diag(Random_Complex_Mat(1, self.M1)[0])
         self.Psi2 = np.diag(Random_Complex_Mat(1, self.M2)[0])
 
-    def CreateUser(
-        self,
-        d1: float,
-        d2: float,
-        d3: float,
-        NoiseVar: float,
-        LosToAntenna: bool,
-        LosToIrs1: bool,
-        LosToIrs2: bool,
-        SINRThreshold: float,
-        Penalty: float,
-    ):
+    def CreateUser(self, d1: float, d2: float, d3: float, NoiseVar: float, LosToAntenna: bool,
+                   LosToIrs1: bool, LosToIrs2: bool, SINRThreshold: float, Penalty: float):
+
         Usr = User(d1, d2, d3, NoiseVar, LosToAntenna,
                    LosToIrs1, LosToIrs2, SINRThreshold, Penalty)
         Usr.GenerateMatrixes(self)
@@ -65,8 +57,7 @@ class Environment:
         for u in enumerate(self.Users):
             u[1].w = RealToPhase(
                 state[self.M1 + self.M2 + (u[0]*self.N):self.M1 + self.M2+(u[0]*self.N)+self.N])
-            u[1].w = (np.reshape(u[1].w,  (self.N, 1)) /
-                      cmath.sqrt(self.N)) * 100
+            u[1].w = (np.reshape(u[1].w,  (self.N, 1)) / sqrt(self.N)) * 100
 
         for i in enumerate(self.Users):
             numerator = (
@@ -159,8 +150,7 @@ class Environment:
         self.Psi1 = np.diag(Random_Complex_Mat(1, self.M1)[0])
         self.Psi2 = np.diag(Random_Complex_Mat(1, self.M2)[0])
         for i in enumerate(self.Users):
-            i[1].w = (Random_Complex_Mat(self.N, 1) /
-                      cmath.sqrt(self.N)) * 100
+            i[1].w = (Random_Complex_Mat(self.N, 1) / sqrt(self.N)) * 100
 
         return self.State()
 

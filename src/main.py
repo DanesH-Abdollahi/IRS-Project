@@ -15,6 +15,8 @@ if __name__ == "__main__":
 
     # U2 = env.CreateUser(15, 5, 10, 1, True, True, False, 1, 2)
 
+    env.InitialState()
+
     agent = Agent(input_dims=[env.M1 + env.M2 + len(env.Users) + len(env.Users) * env.N + 1],
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N)
 
@@ -31,7 +33,7 @@ if __name__ == "__main__":
         for iter in range(1000):
             action = agent.choose_action(state)
 
-            if iter == 0 or iter == 999:
+            if iter == 0 or iter == 1000 - 1:
                 print(action)
 
             new_state, reward, sumrate[ep][iter], SINRs = env.step(action)
@@ -78,7 +80,7 @@ if __name__ == "__main__":
     sumrate = sumrate.reshape((1, sumrate.shape[0] * sumrate.shape[1]))
     # plt.plot(range(1, sumrate.shape[1]+1), sumrate[-1, :])
     plt.subplot(2, 1, 1)
-    plt.plot(range(1, len(sumrate[0])+1), sumrate[0])
+    plt.plot(range(1, len(sumrate[0])+1), sumrate[0], linewidth=1.3)
     plt.ylabel('Sumrate')
     plt.xlabel('Iteration')
     plt.grid(1)
@@ -93,7 +95,7 @@ if __name__ == "__main__":
     # plt.plot(range(1, U1_SINR.shape[1]+1), U1_SINR[-1, :])
     U1_SINR = U1_SINR.reshape((1, U1_SINR.shape[0] * U1_SINR.shape[1]))
     plt.subplot(2, 1, 2)
-    plt.plot(range(1, len(U1_SINR[0])+1), U1_SINR[0])
+    plt.plot(range(1, len(U1_SINR[0])+1), U1_SINR[0], linewidth=1.3)
     plt.ylabel('U1 SINR')
     plt.xlabel('Iteration')
     plt.grid(1)

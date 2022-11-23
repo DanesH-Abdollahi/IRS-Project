@@ -12,18 +12,17 @@ class User:
         self.distance_from_irs2 = d_from_irs2
         self.noise_power = noise_var
 
-        self.los_to_antenna = los_to_antenna
-        self.los_to_irs1 = los_to_irs1
-        self.los_to_irs2 = los_to_irs2
-        self.penalty = penalty
-        self.allocated_power = allocated_power
+        self.los_to_antenna = los_to_antenna   # Line of sight to antenna
+        self.los_to_irs1 = los_to_irs1         # Line of sight to IRS1
+        self.los_to_irs2 = los_to_irs2         # Line of sight to IRS2
+        self.penalty = penalty                 # Penalty for not meeting SINR threshold
+        self.allocated_power = allocated_power  # Power allocated to user
+        self.sinr_threshold = sinr_threshold   # watt
 
         self.hsu = 0
         self.h1u = 0
         self.h2u = 0
         self.w = 0
-
-        self.sinr_threshold = sinr_threshold  # 6 dB approximately
 
     def GenerateMatrixes(self, env) -> None:
         if self.los_to_antenna:

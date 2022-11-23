@@ -10,7 +10,7 @@ from Networks import ActorNetwork, CriticNetwork
 class Agent:
     def __init__(self, input_dims, alpha=0.001, beta=0.002, env=None,
                  gamma=0.99, n_actions=2, max_size=1000000, tau=0.005,
-                 fc1=400, fc2=300, batch_size=64, noise=0.02):
+                 fc1=400, fc2=300, batch_size=64, noise=0.016):
         self.gamma = gamma
         self.tau = tau
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)

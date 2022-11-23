@@ -1,6 +1,7 @@
 from Functions import *
 from User import User
 from cmath import sqrt
+from math import log2
 
 
 class Environment:
@@ -12,19 +13,19 @@ class Environment:
         self.M1 = num_of_irs1  # Number of Elements of IRS1
         self.M2 = num_of_irs2  # Number of Elements of IRS2
 
-        self.PathLosExponent = path_loss_exponent
-        self.Irs1ToAntenna = irs1_to_antenna  # The Distance Between IRS1 & Antenna
-        self.Irs2ToAntenna = irs2_to_antenna  # The Distance Between IRS2 & Antenna
-        self.Irs1ToIrs2 = irs1_to_irs2  # The Distance Between IRS1 & IRS2
+        self.path_loss_exponent = path_loss_exponent
+        self.irs1_to_antenna = irs1_to_antenna  # The Distance Between IRS1 & Antenna
+        self.irs2_to_antenna = irs2_to_antenna  # The Distance Between IRS2 & Antenna
+        self.irs1_to_irs2 = irs1_to_irs2  # The Distance Between IRS1 & IRS2
 
         self.Users = []
         self.SINR = []
         self.SumRate = 0
 
         # Generate Random Channel Coefficient Matrix(es)
-        self.Hs1 = Random_Complex_Mat(self.M1, self.N) / self.Irs1ToAntenna
-        self.Hs2 = Random_Complex_Mat(self.M2, self.N) / self.Irs2ToAntenna
-        self.H12 = Random_Complex_Mat(self.M2, self.M1) / self.Irs1ToIrs2
+        self.Hs1 = Random_Complex_Mat(self.M1, self.N) / self.irs1_to_antenna
+        self.Hs2 = Random_Complex_Mat(self.M2, self.N) / self.irs2_to_antenna
+        self.H12 = Random_Complex_Mat(self.M2, self.M1) / self.irs1_to_irs2
         self.H21 = np.conjugate(np.transpose(self.H12))
 
         # Generate Initial IRS Coefficient Matrix(es)
@@ -42,73 +43,10 @@ class Environment:
 
         Usr.GenerateMatrixes(self)
         self.Users.append(Usr)
+        self.SINR.append(0)
         return Usr
 
-    def Reward(self) -> float:
-        self.CalculateSINR(self.state)
-        reward = self.SumRate
-        for i in enumerate(self.SINR):
-            if i[1] < self.Users[i[0]].sinr_threshold:
-                reward -= self.Users[i[0]].penalty
-
-        return reward
-
-    def CalculateSINR(self, state):
-        SINR = []
-        self.Psi1 = RealToPhase(state[0:self.M1])
-        self.Psi2 = RealToPhase(state[self.M1:self.M1 + self.M2])
-        self.Psi1 = np.diag(self.Psi1)
-        self.Psi2 = np.diag(self.Psi2)
-
-        for u in enumerate(self.Users):
-            u[1].w = RealToPhase(
-                state[self.M1 + self.M2 + (u[0]*self.N):self.M1 + self.M2+(u[0]*self.N)+self.N])
-            u[1].w = (np.reshape(u[1].w,  (self.N, 1)) / sqrt(self.N)) * 100
-
-        for i in enumerate(self.Users):
-            numerator = (
-                np.absolute(
-                    (
-                        i[1].hsu
-                        + (i[1].h1u @ self.Psi1) @ self.Hs1
-                        + (i[1].h2u @ self.Psi2) @ self.Hs2
-                        + (i[1].h2u @ self.Psi2) @ self.Hs2
-                        + ((i[1].h1u @ self.Psi1) @
-                           self.H21) @ (self.Psi2 @ self.Hs2)
-                        + ((i[1].h2u @ self.Psi2) @
-                           self.H12) @ (self.Psi1 @ self.Hs1)
-                    ) @ i[1].w
-                )
-                ** 2
-            )
-
-            denominator = i[1].noise_power
-            for j in enumerate(self.Users):
-                if j[0] != i[0]:
-                    denominator += (
-                        np.absolute(
-                            (
-                                j[1].hsu
-                                + (j[1].h1u @ self.Psi1) @ self.Hs1
-                                + (j[1].h2u @ self.Psi2) @ self.Hs2
-                                + (j[1].h2u @ self.Psi2) @ self.Hs2
-                                + ((j[1].h1u @ self.Psi1) @
-                                   self.H21) @ (self.Psi2 @ self.Hs2)
-                                + ((j[1].h2u @ self.Psi2) @
-                                   self.H12) @ (self.Psi1 @ self.Hs1)
-                            ) @ j[1].w
-
-                        )
-                        ** 2
-                    )
-
-            SINR.append((numerator / denominator)[0, 0])
-
-        self.SINR = SINR
-        self.SumRate = sum(math.log2(1 + i) for i in self.SINR)
-
-    def State(self) -> np.ndarray:
-
+    def InitialState(self):
         tmp = np.angle(self.Users[0].w[:, 0], deg=False)
         for i in range(1, len(self.Users)):
             tmp = np.concatenate(
@@ -124,7 +62,59 @@ class Environment:
             axis=0,
         )
 
-        self.CalculateSINR(self.state)
+    def Reward(self) -> float:
+        reward = self.SumRate
+        for i in enumerate(self.SINR):
+            if i[1] < self.Users[i[0]].sinr_threshold:
+                reward -= self.Users[i[0]].penalty
+
+        return reward
+
+    def CalculateSINR(self):
+        SINR = []
+        for i in enumerate(self.Users):
+            numerator = np.absolute(
+                (
+                    i[1].hsu
+                    + (i[1].h1u @ self.Psi1) @ self.Hs1
+                    + (i[1].h2u @ self.Psi2) @ self.Hs2
+                    + (i[1].h2u @ self.Psi2) @ self.Hs2
+                    + ((i[1].h1u @ self.Psi1) @
+                       self.H21) @ (self.Psi2 @ self.Hs2)
+                    + ((i[1].h2u @ self.Psi2) @
+                           self.H12) @ (self.Psi1 @ self.Hs1)
+                ) @ i[1].w
+            ) ** 2
+
+            denominator = i[1].noise_power
+            for j in enumerate(self.Users):
+                if j[0] != i[0]:
+                    denominator += np.absolute(
+                        (
+                            j[1].hsu
+                            + (j[1].h1u @ self.Psi1) @ self.Hs1
+                            + (j[1].h2u @ self.Psi2) @ self.Hs2
+                            + (j[1].h2u @ self.Psi2) @ self.Hs2
+                            + ((j[1].h1u @ self.Psi1) @
+                               self.H21) @ (self.Psi2 @ self.Hs2)
+                            + ((j[1].h2u @ self.Psi2) @
+                               self.H12) @ (self.Psi1 @ self.Hs1)
+                        ) @ j[1].w
+
+                    ) ** 2
+
+            SINR.append((numerator / denominator)[0, 0])
+
+        self.SINR = SINR
+        self.SumRate = sum(log2(1 + i) for i in SINR)
+
+    def State(self) -> None:
+        tmp = np.angle(self.Users[0].w[:, 0], deg=False)
+        for i in range(1, len(self.Users)):
+            tmp = np.concatenate(
+                (tmp, np.angle(self.Users[i].w[:, 0], deg=False)))
+
+        self.CalculateSINR()
         self.state = np.concatenate(
             (
                 np.angle(np.diag(self.Psi1), deg=False),  # M1
@@ -141,23 +131,23 @@ class Environment:
         self.Psi1 = np.diag(Random_Complex_Mat(1, self.M1)[0])
         self.Psi2 = np.diag(Random_Complex_Mat(1, self.M2)[0])
         for i in enumerate(self.Users):
-            i[1].w = (Random_Complex_Mat(self.N, 1) / sqrt(self.N)) * 100
+            i[1].w = (Random_Complex_Mat(self.N, 1) /
+                      sqrt(self.N)) * i[1].allocated_power
 
         return self.State()
 
     def step(self, action):
+        action = np.array(action)
+        self.Psi1 = np.diag(RealToPhase(action[0: self.M1]))
+        self.Psi2 = np.diag(RealToPhase(action[self.M1: self.M1 + self.M2]))
 
+        for u in enumerate(self.Users):
+            u[1].w = RealToPhase(
+                action[self.M1 + self.M2 + (u[0] * self.N): self.M1 + self.M2+(u[0] * self.N) + self.N])
+            u[1].w = (u[1].w).reshape(self.N, 1)
+            u[1].w = (u[1].w / sqrt(self.N)) * u[1].allocated_power
+
+        self.State()
         reward = self.Reward()
-        self.state = np.concatenate(
-            (
-                action[0:self.M1],  # M1
-                action[self.M1:self.M1 + self.M2],  # M2
-                action[self.M1 + self.M2: self.M1 + \
-                       self.M2 + (len(self.Users) + 1) * self.N],
-                self.SINR,
-                [self.SumRate]
-            ),
-            axis=0,
-        )
 
         return self.state, reward, self.SumRate, self.SINR

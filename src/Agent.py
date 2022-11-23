@@ -10,7 +10,7 @@ from Networks import ActorNetwork, CriticNetwork
 class Agent:
     def __init__(self, input_dims, alpha=0.001, beta=0.002, env=None,
                  gamma=0.99, n_actions=2, max_size=1000000, tau=0.005,
-                 fc1=400, fc2=300, batch_size=64, noise=0.025):
+                 fc1=400, fc2=300, batch_size=64, noise=0.02):
         self.gamma = gamma
         self.tau = tau
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
@@ -20,10 +20,10 @@ class Agent:
         self.max_action = pi
         self.min_action = -pi
 
-        self.actor = ActorNetwork(n_actions=n_actions, name='Actor')
+        self.actor = ActorNetwork(n_actions=self.n_actions, name='Actor')
         self.critic = CriticNetwork(name='Critic')
         self.target_actor = ActorNetwork(
-            n_actions=n_actions, name='TargetActor')
+            n_actions=self.n_actions, name='TargetActor')
         self.target_critic = CriticNetwork(name='TargetCritic')
 
         self.actor.compile(optimizer=Adam(learning_rate=alpha))
@@ -79,6 +79,7 @@ class Agent:
 
     def learn(self):
         if self.memory.mem_cntr < self.batch_size:
+            # print(self.memory.mem_cntr)
             return
 
         state, action, reward, new_state = self.memory.sample_buffer(
@@ -100,6 +101,7 @@ class Agent:
 
         critic_network_gradient = tape.gradient(
             critic_loss, self.critic.trainable_variables)
+
         self.critic.optimizer.apply_gradients(
             zip(critic_network_gradient, self.critic.trainable_variables))
 

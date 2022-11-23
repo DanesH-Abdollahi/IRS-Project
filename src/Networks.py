@@ -2,10 +2,11 @@ import os
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.layers import Dense
+from math import pi
 
 
 class CriticNetwork(keras.Model):
-    def __init__(self, fc1_dims=512, fc2_dims=512, name="Critic", chkpt_dir="../tmp/ddpg"):
+    def __init__(self, fc1_dims=512, fc2_dims=256, name="Critic", chkpt_dir="../tmp/ddpg"):
         super(CriticNetwork, self).__init__()
         self.model_name = name
         self.fc1_dims = fc1_dims
@@ -27,7 +28,7 @@ class CriticNetwork(keras.Model):
 
 
 class ActorNetwork(keras.Model):
-    def __init__(self, fc1_dims=512, fc2_dims=512, n_actions=2, name="Actor", chkpt_dir="../tmp/ddpg"):
+    def __init__(self, fc1_dims=512, fc2_dims=256, n_actions=2, name="Actor", chkpt_dir="../tmp/ddpg"):
         super(ActorNetwork, self).__init__()
         self.n_actions = n_actions
         self.model_name = name
@@ -39,11 +40,11 @@ class ActorNetwork(keras.Model):
 
         self.fc1 = Dense(self.fc1_dims, activation='relu')
         self.fc2 = Dense(self.fc2_dims, activation='relu')
-        self.mu = Dense(self.n_actions, activation='tanh')
+        self.mu = Dense(self.n_actions, activation='softsign')
 
     def call(self, state):
         prob = self.fc1(state)
         prob = self.fc2(prob)
-        mu = self.mu(prob)
+        mu = self.mu(prob) * pi
 
         return mu

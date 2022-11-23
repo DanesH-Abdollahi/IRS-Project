@@ -3,42 +3,46 @@ from cmath import sqrt
 
 
 class User:
-    def __init__(self, d1: float, d2: float, d3: float, NoiseVar: float, LosToAntenna: bool,
-                 LosToIrs1: bool, LosToIrs2: bool, SINR_Threshold: float, Penalty: float) -> None:
+    def __init__(self, d_from_antenna: float, d_from_irs1: float, d_from_irs2: float,
+                 noise_var: float, los_to_antenna: bool, los_to_irs1: bool, los_to_irs2: bool,
+                 sinr_threshold: float, penalty: float, allocated_power: float) -> None:
 
-        self.DistanceFromAntenna = d1
-        self.DistanceFromIrs1 = d2
-        self.DistanceFromIrs2 = d3
-        self.NoisePower = NoiseVar
+        self.distance_from_antenna = d_from_antenna
+        self.distance_from_irs1 = d_from_irs1
+        self.distance_from_irs2 = d_from_irs2
+        self.noise_power = noise_var
 
-        self.LosToAntenna = LosToAntenna
-        self.LosToIrs1 = LosToIrs1
-        self.LosToIrs2 = LosToIrs2
-        self.Penalty = Penalty
+        self.los_to_antenna = los_to_antenna
+        self.los_to_irs1 = los_to_irs1
+        self.los_to_irs2 = los_to_irs2
+        self.penalty = penalty
+        self.allocated_power = allocated_power
 
         self.hsu = 0
         self.h1u = 0
         self.h2u = 0
         self.w = 0
 
-        self.SINRThreshold = SINR_Threshold  # 6 dB approximately
+        self.sinr_threshold = sinr_threshold  # 6 dB approximately
 
     def GenerateMatrixes(self, env) -> None:
-        if self.LosToAntenna:
-            self.hsu = Random_Complex_Mat(1, env.N) / self.DistanceFromAntenna
+        if self.los_to_antenna:
+            self.hsu = Random_Complex_Mat(
+                1, env.N) / self.distance_from_antenna
         else:
             self.hsu = np.zeros((1, env.N))
 
-        if self.LosToIrs1:
-            self.h1u = Random_Complex_Mat(1, env.M1) / self.DistanceFromIrs1
+        if self.los_to_irs1:
+            self.h1u = Random_Complex_Mat(1, env.M1) / self.distance_from_irs1
 
         else:
             self.h1u = np.zeros((1, env.M1))
 
-        if self.LosToIrs2:
-            self.h2u = Random_Complex_Mat(1, env.M2) / self.DistanceFromIrs2
+        if self.los_to_irs2:
+            self.h2u = Random_Complex_Mat(1, env.M2) / self.distance_from_irs2
 
         else:
             self.h2u = np.zeros((1, env.M2))
 
-        self.w = (Random_Complex_Mat(env.N, 1) / sqrt(env.N)) * 100
+        self.w = (Random_Complex_Mat(env.N, 1) /
+                  sqrt(env.N)) * self.allocated_power

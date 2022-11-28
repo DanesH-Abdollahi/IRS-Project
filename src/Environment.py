@@ -56,19 +56,10 @@ class Environment:
             (
                 np.angle(np.diag(self.Psi1), deg=False),  # M1
                 np.angle(np.diag(self.Psi2), deg=False),  # M2
-                tmp,
-                [0 for _ in range(len(self.Users) + 1)]
+                tmp                                       # N * len(Users)
             ),
             axis=0,
         )
-
-    def Reward(self) -> float:
-        reward = self.SumRate
-        for i in enumerate(self.SINR):
-            if i[1] < self.Users[i[0]].sinr_threshold:
-                reward -= self.Users[i[0]].penalty
-
-        return reward
 
     def CalculateSINR(self):
         SINR = []
@@ -108,26 +99,31 @@ class Environment:
         self.SINR = SINR
         self.SumRate = sum(log2(1 + i) for i in SINR)
 
+    def Reward(self) -> float:
+        reward = self.SumRate
+        for i in enumerate(self.SINR):
+            if i[1] < self.Users[i[0]].sinr_threshold:
+                reward -= self.Users[i[0]].penalty
+
+        return reward
+
     def State(self) -> None:
         tmp = np.angle(self.Users[0].w[:, 0], deg=False)
         for i in range(1, len(self.Users)):
             tmp = np.concatenate(
                 (tmp, np.angle(self.Users[i].w[:, 0], deg=False)))
 
-        self.CalculateSINR()
         self.state = np.concatenate(
             (
                 np.angle(np.diag(self.Psi1), deg=False),  # M1
                 np.angle(np.diag(self.Psi2), deg=False),  # M2
-                tmp,
-                self.SINR,  # Users Num.
-                [self.SumRate]  # 1
+                tmp,                                      # N * len(Users)
             ),
             axis=0,
         )
         return self.state
 
-    def reset(self):
+    def Reset(self):
         self.Psi1 = np.diag(Random_Complex_Mat(1, self.M1)[0])
         self.Psi2 = np.diag(Random_Complex_Mat(1, self.M2)[0])
         for i in enumerate(self.Users):
@@ -136,7 +132,7 @@ class Environment:
 
         return self.State()
 
-    def step(self, action):
+    def Step(self, action):
         action = np.array(action)
         self.Psi1 = np.diag(RealToPhase(action[0: self.M1]))
         self.Psi2 = np.diag(RealToPhase(action[self.M1: self.M1 + self.M2]))
@@ -147,7 +143,8 @@ class Environment:
             u[1].w = (u[1].w).reshape(self.N, 1)
             u[1].w = (u[1].w / sqrt(self.N)) * u[1].allocated_power
 
-        self.State()
+        new_state = self.State()
+        self.CalculateSINR()
         reward = self.Reward()
 
-        return self.state, reward, self.SumRate, self.SINR
+        return new_state, reward, self.SumRate, self.SINR

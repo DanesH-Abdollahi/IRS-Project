@@ -7,7 +7,7 @@ from math import pi
 
 class CriticNetwork(keras.Model):
     def __init__(self, fc1_dims=512, fc2_dims=256, name="Critic", chkpt_dir="../tmp/ddpg"):
-        super(CriticNetwork, self).__init__()
+        super().__init__()
         self.model_name = name
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
@@ -29,7 +29,7 @@ class CriticNetwork(keras.Model):
 
 class ActorNetwork(keras.Model):
     def __init__(self, fc1_dims=512, fc2_dims=256, n_actions=2, name="Actor", chkpt_dir="../tmp/ddpg"):
-        super(ActorNetwork, self).__init__()
+        super().__init__()
         self.n_actions = n_actions
         self.model_name = name
         self.fc1_dims = fc1_dims

@@ -14,8 +14,8 @@ if __name__ == "__main__":
                         los_to_irs2=True, sinr_threshold=10, penalty=0, allocated_power=1)
 
     # U2 = env.CreateUser(distance_to_antenna=40, distance_to_irs1=10, distance_to_irs2=20,
-    #                     noise_var=1e-4, los_to_antenna=False, los_to_irs1=False,
-    #                     los_to_irs2=True, sinr_threshold=10, penalty=0, allocated_power=1)
+    #                     noise_var=1e-4, los_to_antenna=False, los_to_irs1=True,
+    #                     los_to_irs2=False, sinr_threshold=10, penalty=1, allocated_power=1)
 
     env.InitialState()
 
@@ -23,9 +23,9 @@ if __name__ == "__main__":
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N)
 
     score_history = []
-    rewards = np.zeros((1, 1000))
-    sumrate = np.zeros((1, 1000))
-    U1_SINR = np.zeros((1, 1000))
+    rewards = np.zeros((1, 2000))
+    sumrate = np.zeros((1, 2000))
+    U1_SINR = np.zeros((1, 2000))
     # U2_SINR = np.zeros((1, 1000))
     Old_Avg = 0
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
         # state = env.Reset()
         state = env.state
         score = 0
-        for iter in range(1000):
+        for iter in range(2000):
             action = agent.choose_action(state)
 
             new_state, reward, sumrate[ep][iter], SINRs = env.Step(action)

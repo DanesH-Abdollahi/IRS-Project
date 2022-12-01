@@ -3,7 +3,7 @@ from math import e, pi
 
 
 def RealToPhase(input):
-    tmp = [1j * i for i in input]
+    tmp = [1j * pi * i for i in input]
     return e ** (np.array(tmp))
 
 

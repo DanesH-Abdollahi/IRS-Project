@@ -1,7 +1,7 @@
 from Functions import *
 from User import User
 from cmath import sqrt
-from math import log2
+from math import log2, log10
 
 
 class Environment:
@@ -21,6 +21,7 @@ class Environment:
         self.Users = []
         self.SINR = []
         self.SumRate = 0
+        self.num_of_users = 0
 
         # Generate Random Channel Coefficient Matrix(es)
         self.Hs1 = Random_Complex_Mat(self.M1, self.N) / self.irs1_to_antenna
@@ -44,22 +45,18 @@ class Environment:
         Usr.GenerateMatrixes(self)
         self.Users.append(Usr)
         self.SINR.append(0)
+        self.num_of_users += 1
         return Usr
 
-    def InitialState(self):
-        tmp = np.angle(self.Users[0].w[:, 0], deg=False)
-        for i in range(1, len(self.Users)):
-            tmp = np.concatenate(
-                (tmp, np.angle(self.Users[i].w[:, 0], deg=False)))
-
-        self.state = np.concatenate(
-            (
-                np.angle(np.diag(self.Psi1), deg=False),  # M1
-                np.angle(np.diag(self.Psi2), deg=False),  # M2
-                tmp                                       # N * len(Users)
-            ),
-            axis=0,
-        )
+    # def InitialState(self):
+    #     self.state = np.concatenate(
+    #         (
+    #             np.angle(np.diag(self.Psi1), deg=False),  # M1
+    #             np.angle(np.diag(self.Psi2), deg=False),  # M2
+    #             tmp                                       # N * len(Users)
+    #         ),
+    #         axis=0,
+    #     )
 
     def CalculateSINR(self):
         SINR = []
@@ -96,7 +93,7 @@ class Environment:
 
             SINR.append((numerator / denominator)[0, 0])
 
-        self.SINR = SINR
+        self.SINR = [10*log10(i) for i in SINR]
         self.SumRate = sum(log2(1 + i) for i in SINR)
 
     def Reward(self) -> float:
@@ -108,16 +105,11 @@ class Environment:
         return reward
 
     def State(self) -> None:
-        tmp = np.angle(self.Users[0].w[:, 0], deg=False)
-        for i in range(1, len(self.Users)):
-            tmp = np.concatenate(
-                (tmp, np.angle(self.Users[i].w[:, 0], deg=False)))
-
+        self.CalculateSINR()
         self.state = np.concatenate(
             (
-                np.angle(np.diag(self.Psi1), deg=False),  # M1
-                np.angle(np.diag(self.Psi2), deg=False),  # M2
-                tmp,                                      # N * len(Users)
+                self.SINR,  # N
+                [self.SumRate],  # 1
             ),
             axis=0,
         )
@@ -144,7 +136,6 @@ class Environment:
             u[1].w = (u[1].w / sqrt(self.N)) * u[1].allocated_power
 
         new_state = self.State()
-        self.CalculateSINR()
         reward = self.Reward()
 
         return new_state, reward, self.SumRate, self.SINR

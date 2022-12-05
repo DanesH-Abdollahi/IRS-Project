@@ -17,8 +17,8 @@ class Agent:
         self.batch_size = batch_size
         self.n_actions = n_actions
         self.noise = noise
-        self.max_action = pi
-        self.min_action = -pi
+        self.max_action = 1
+        self.min_action = -1
 
         self.actor = ActorNetwork(n_actions=self.n_actions, name='Actor')
         self.critic = CriticNetwork(name='Critic')
@@ -73,7 +73,7 @@ class Agent:
         if not evaluate:
             actions += tf.random.normal(shape=[self.n_actions], mean=0.0,
                                         stddev=self.noise)
-        actions = tf.clip_by_value(actions, self.min_action, self.max_action)
+        # actions = tf.clip_by_value(actions, self.min_action, self.max_action)
 
         return actions[0]
 

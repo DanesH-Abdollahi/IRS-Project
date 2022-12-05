@@ -17,23 +17,22 @@ if __name__ == "__main__":
     #                     noise_var=1e-4, los_to_antenna=False, los_to_irs1=True,
     #                     los_to_irs2=False, sinr_threshold=10, penalty=1, allocated_power=1)
 
-    env.InitialState()
+    # env.InitialState()
 
-    agent = Agent(input_dims=[env.M1 + env.M2 + len(env.Users) * env.N],
+    agent = Agent(input_dims=[env.num_of_users + 1],
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N)
 
     score_history = []
-    rewards = np.zeros((1, 2000))
-    sumrate = np.zeros((1, 2000))
-    U1_SINR = np.zeros((1, 2000))
-    # U2_SINR = np.zeros((1, 1000))
+    rewards = np.zeros((1, 1000))
+    sumrate = np.zeros((1, 1000))
+    U1_SINR = np.zeros((1, 1000))
+    # U2_SINR = np.zeros((1, 500))
     Old_Avg = 0
 
     for ep in range(1):
-        # state = env.Reset()
-        state = env.state
+        state = env.Reset()
         score = 0
-        for iter in range(2000):
+        for iter in range(1000):
             action = agent.choose_action(state)
 
             new_state, reward, sumrate[ep][iter], SINRs = env.Step(action)
@@ -99,7 +98,7 @@ if __name__ == "__main__":
     U1_SINR = U1_SINR.reshape((1, U1_SINR.shape[0] * U1_SINR.shape[1]))
     # plt.subplot(2, 1, 1)
     plt.plot(range(1, len(U1_SINR[0])+1), U1_SINR[0], linewidth=1.3)
-    plt.ylabel('U1 SINR')
+    plt.ylabel('U1 SINR (dB)')
     plt.xlabel('Iteration')
     plt.grid(1)
 

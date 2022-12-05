@@ -10,7 +10,7 @@ from Networks import ActorNetwork, CriticNetwork
 class Agent:
     def __init__(self, input_dims, alpha=0.001, beta=0.001, env=None,
                  gamma=0.99, n_actions=2, max_size=100000, tau=0.001,
-                 fc1=400, fc2=300, batch_size=16, noise=0.015):
+                 fc1=256, fc2=128, batch_size=32, noise=0.0025):
         self.gamma = gamma
         self.tau = tau
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
@@ -20,11 +20,15 @@ class Agent:
         self.max_action = 1
         self.min_action = -1
 
-        self.actor = ActorNetwork(n_actions=self.n_actions, name='Actor')
-        self.critic = CriticNetwork(name='Critic')
+        self.actor = ActorNetwork(
+            n_actions=self.n_actions, name='Actor', fc1_dims=fc1, fc2_dims=fc2)
+        self.critic = CriticNetwork(name='Critic', fc1_dims=fc1, fc2_dims=fc2)
+
         self.target_actor = ActorNetwork(
-            n_actions=self.n_actions, name='TargetActor')
-        self.target_critic = CriticNetwork(name='TargetCritic')
+            n_actions=self.n_actions, name='TargetActor', fc1_dims=fc1, fc2_dims=fc2)
+
+        self.target_critic = CriticNetwork(
+            name='TargetCritic', fc1_dims=fc1, fc2_dims=fc2)
 
         self.actor.compile(optimizer=Adam(learning_rate=alpha))
         self.critic.compile(optimizer=Adam(learning_rate=beta))
@@ -74,6 +78,7 @@ class Agent:
         if not evaluate:
             actions += tf.random.normal(shape=[self.n_actions], mean=0.0,
                                         stddev=self.noise)
+
         actions = tf.clip_by_value(actions, self.min_action, self.max_action)
 
         return actions[0]

@@ -128,6 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+#
 .vscode/
 Test.ipynb
 desktop.ini
+tmp/
+tmp_results/

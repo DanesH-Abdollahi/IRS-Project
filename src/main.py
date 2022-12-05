@@ -38,13 +38,6 @@ if __name__ == "__main__":
 
             new_state, reward, sumrate[ep][iter], SINRs = env.Step(action)
 
-            # if iter == 0 or iter == 1000 - 1:
-            #     print(action, "\n")
-            #     print(np.angle(env.Psi1, deg=False), "\n")
-            #     print(np.angle(env.Psi2, deg=False), "\n")
-            #     print(np.angle(U1.w, deg=False),
-            #           "\n*************************************************************")
-
             agent.remember(state, action, reward, new_state)
             agent.learn()
             obs = new_state

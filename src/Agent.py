@@ -8,9 +8,9 @@ from Networks import ActorNetwork, CriticNetwork
 
 
 class Agent:
-    def __init__(self, input_dims, alpha=0.001, beta=0.002, env=None,
-                 gamma=0.99, n_actions=2, max_size=1000000, tau=0.005,
-                 fc1=400, fc2=300, batch_size=32, noise=0.015):
+    def __init__(self, input_dims, alpha=0.001, beta=0.001, env=None,
+                 gamma=0.99, n_actions=2, max_size=100000, tau=0.001,
+                 fc1=400, fc2=300, batch_size=16, noise=0.015):
         self.gamma = gamma
         self.tau = tau
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
@@ -28,8 +28,8 @@ class Agent:
 
         self.actor.compile(optimizer=Adam(learning_rate=alpha))
         self.critic.compile(optimizer=Adam(learning_rate=beta))
-        self.target_actor.compile(optimizer=Adam(learning_rate=alpha))
-        self.target_critic.compile(optimizer=Adam(learning_rate=beta))
+        # self.target_actor.compile(optimizer=Adam(learning_rate=alpha)) #  needed ?
+        # self.target_critic.compile(optimizer=Adam(learning_rate=beta))
 
         self.update_network_parameters(tau=1)  # Hard update
 

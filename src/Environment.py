@@ -48,16 +48,6 @@ class Environment:
         self.num_of_users += 1
         return Usr
 
-    # def InitialState(self):
-    #     self.state = np.concatenate(
-    #         (
-    #             np.angle(np.diag(self.Psi1), deg=False),  # M1
-    #             np.angle(np.diag(self.Psi2), deg=False),  # M2
-    #             tmp                                       # N * len(Users)
-    #         ),
-    #         axis=0,
-    #     )
-
     def CalculateSINR(self):
         SINR = []
         for i in enumerate(self.Users):

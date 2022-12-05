@@ -28,8 +28,9 @@ class Agent:
 
         self.actor.compile(optimizer=Adam(learning_rate=alpha))
         self.critic.compile(optimizer=Adam(learning_rate=beta))
-        # self.target_actor.compile(optimizer=Adam(learning_rate=alpha)) #  needed ?
-        # self.target_critic.compile(optimizer=Adam(learning_rate=beta))
+        self.target_actor.compile(optimizer=Adam(
+            learning_rate=alpha))  # needed ?
+        self.target_critic.compile(optimizer=Adam(learning_rate=beta))
 
         self.update_network_parameters(tau=1)  # Hard update
 
@@ -73,22 +74,21 @@ class Agent:
         if not evaluate:
             actions += tf.random.normal(shape=[self.n_actions], mean=0.0,
                                         stddev=self.noise)
-        # actions = tf.clip_by_value(actions, self.min_action, self.max_action)
+        actions = tf.clip_by_value(actions, self.min_action, self.max_action)
 
         return actions[0]
 
     def learn(self):
         if self.memory.mem_cntr < self.batch_size:
-            # print(self.memory.mem_cntr)
             return
 
         state, action, reward, new_state = self.memory.sample_buffer(
             self.batch_size)
 
-        new_satate = tf.convert_to_tensor(new_state, dtype=tf.float32)
         state = tf.convert_to_tensor(state, dtype=tf.float32)
-        reward = tf.convert_to_tensor(reward, dtype=tf.float32)
         action = tf.convert_to_tensor(action, dtype=tf.float32)
+        reward = tf.convert_to_tensor(reward, dtype=tf.float32)
+        new_satate = tf.convert_to_tensor(new_state, dtype=tf.float32)
 
         with tf.GradientTape() as tape:
             target_actions = self.target_actor(new_satate)

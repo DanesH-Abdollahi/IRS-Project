@@ -26,7 +26,6 @@ class CriticNetwork(keras.Model):
 
         return q
 
-
 class ActorNetwork(keras.Model):
     def __init__(self, fc1_dims=512, fc2_dims=256, n_actions=2, name="Actor", chkpt_dir="../tmp/ddpg"):
         super().__init__()

@@ -16,7 +16,7 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
 
     # Plot the score history
     plt.plot(range(1, len(score_history) + 1), score_history)
-    plt.title(title)
+    plt.title(title, fontweight='bold')
     plt.ylabel('Score')
     plt.xlabel('Episode')
     plt.grid(1)
@@ -25,7 +25,7 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
 
     # Plot the sumrate
     plt.plot(range(1, len(sumrate) + 1), sumrate, linewidth=1.3)
-    plt.title(title)
+    plt.title(title, fontweight='bold')
     plt.ylabel('Sumrate')
     plt.xlabel('Iteration')
     plt.grid(1)
@@ -37,7 +37,7 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
 
     # Plot the U1_SINR
     plt.plot(range(1, len(u1_sinr) + 1), u1_sinr, linewidth=1.3)
-    plt.title(title, fontsize=12, fontweight='bold')
+    plt.title(title, fontweight='bold')
     plt.ylabel('U1 SINR (dB)')
     plt.xlabel('Iteration')
     plt.grid(1)

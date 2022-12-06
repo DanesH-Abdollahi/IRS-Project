@@ -37,6 +37,7 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
 
     # Plot the U1_SINR
     plt.plot(range(1, len(u1_sinr) + 1), u1_sinr, linewidth=1.3)
+    # plt.yscale('log')
     plt.title(title, fontweight='bold')
     plt.ylabel('U1 SINR (dB)')
     plt.xlabel('Iteration')
@@ -47,14 +48,16 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
     plt.savefig('../tmp_results/U1_SINR.png')
     plt.show()
 
-    # Plot the U2_SINR
-    # plt.plot(range(1, len(u2_sinr) + 1), u2_sinr, linewidth=1.3)
-    # plt.title(title, fontsize=12, fontweight='bold')
-    # plt.ylabel('U1 SINR (dB)')
-    # plt.xlabel('Iteration')
-    # plt.grid(1)
-    # plt.axhline(y=u2_sinr.mean(), xmin=0, xmax=1, color='r', label='Mean')
-    # plt.axhline(y=u2_sinr.max(), xmin=0, xmax=1, color='k', label='Max')
-    # plt.legend(bbox_to_anchor=(1.0, 1), loc='upper left')
-    # plt.savefig('../tmp_results/U2_SINR.png')
-    # plt.show()
+    if u2_sinr is not None:
+        # Plot the U2_SINR
+        plt.plot(range(1, len(u2_sinr) + 1), u2_sinr, linewidth=1.3)
+        # plt.yscale('log')
+        plt.title(title, fontsize=12, fontweight='bold')
+        plt.ylabel('U2 SINR (dB)')
+        plt.xlabel('Iteration')
+        plt.grid(1)
+        plt.axhline(y=u2_sinr.mean(), xmin=0, xmax=1, color='r', label='Mean')
+        plt.axhline(y=u2_sinr.max(), xmin=0, xmax=1, color='k', label='Max')
+        plt.legend(bbox_to_anchor=(1.0, 1), loc='upper left')
+        plt.savefig('../tmp_results/U2_SINR.png')
+        plt.show()

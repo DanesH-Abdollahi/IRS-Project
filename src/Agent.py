@@ -8,7 +8,7 @@ from Networks import ActorNetwork, CriticNetwork
 
 
 class Agent:
-    def __init__(self, input_dims, alpha=0.001, beta=0.001, env=None,
+    def __init__(self, input_dims, alpha=0.001, beta=0.002, env=None,
                  gamma=0.99, n_actions=2, max_size=100000, tau=0.001,
                  fc1=256, fc2=128, batch_size=32, noise=0.0015):
         self.gamma = gamma
@@ -30,11 +30,10 @@ class Agent:
         self.target_critic = CriticNetwork(
             name='TargetCritic', fc1_dims=fc1, fc2_dims=fc2)
 
-        self.actor.compile(optimizer=RMSprop(learning_rate=alpha))
-        self.critic.compile(optimizer=RMSprop(learning_rate=beta))
-        self.target_actor.compile(optimizer=RMSprop(
-            learning_rate=alpha))  # needed ?
-        self.target_critic.compile(optimizer=RMSprop(learning_rate=beta))
+        self.actor.compile(optimizer=Adam(learning_rate=alpha))
+        self.critic.compile(optimizer=Adam(learning_rate=beta))
+        self.target_actor.compile(optimizer=Adam(learning_rate=alpha))
+        self.target_critic.compile(optimizer=Adam(learning_rate=beta))
 
         self.update_network_parameters(tau=1)  # Hard update
 
@@ -83,6 +82,7 @@ class Agent:
 
         return actions[0]
 
+
     def learn(self):
         if self.memory.mem_cntr < self.batch_size:
             return
@@ -114,7 +114,7 @@ class Agent:
             new_policy_actions = self.actor(state)
             actor_loss = -self.critic(state, new_policy_actions)
 
-            actor_loss = tf.math.reduce_mean(actor_loss)
+            actor_loss = tf.reduce_mean(actor_loss)
 
         actor_network_gradient = tape.gradient(
             actor_loss, self.actor.trainable_variables)

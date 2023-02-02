@@ -20,11 +20,11 @@ if __name__ == "__main__":
 
     # env.InitialState()
 
-    agent = Agent(input_dims=[env.num_of_users + 1],
+    agent = Agent(num_states=env.num_of_users + 1,bound=1,
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N)
 
     num_of_episodes = 1
-    num_of_iterations = 4000
+    num_of_iterations = 1000
 
     score_history = np.zeros((num_of_episodes,))
     rewards = np.zeros((num_of_episodes, num_of_iterations))

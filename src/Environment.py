@@ -96,13 +96,14 @@ class Environment:
 
     def State(self) -> None:
         self.CalculateSINR()
-        self.state = np.concatenate(
-            (
-                self.SINR,  # N
-                [self.SumRate],  # 1
-            ),
-            axis=0,
-        )
+        # self.state = np.concatenate(
+        #     (
+        #         self.SINR,  # N
+        #         [self.SumRate],  # 1
+        #     ),
+        #     axis=0,
+        # )
+        self.state = np.array(self.SINR)
         return self.state
 
     def Reset(self):

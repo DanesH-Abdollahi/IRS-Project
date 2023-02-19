@@ -6,7 +6,7 @@ from Display import disp
 
 
 if __name__ == "__main__":
-    env = Environment(num_of_antennas=5, num_of_irs1=5, num_of_irs2=5,
+    env = Environment(num_of_antennas=10, num_of_irs1=15, num_of_irs2=15,
                       path_loss_exponent=2, irs1_to_antenna=20,
                       irs2_to_antenna=20, irs1_to_irs2=10)
 
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     agent = Agent(num_states=env.num_of_users, bound=2,
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N)
 
-    num_of_episodes = 50
+    num_of_episodes = 60
     num_of_iterations = 200
 
     score_history = np.zeros((num_of_episodes,))

@@ -1,7 +1,7 @@
 import os
 import tensorflow as tf
 import tensorflow.keras as keras
-from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.layers import Dense, Input, BatchNormalization
 from math import pi
 
 
@@ -16,8 +16,11 @@ class CriticNetwork(keras.Model):
         self.checkpoint_file = os.path.join(
             self.chkpt_dir, self.model_name + "_ddpg.h5")
 
+        self.bn0 = BatchNormalization()
         self.fc1 = Dense(self.fc1_dims, activation='relu')
+        self.bn1 = BatchNormalization()
         self.fc2 = Dense(self.fc2_dims, activation='relu')
+        self.bn2 = BatchNormalization()
 
         self.action_value = Dense(self.fc2_dims, activation='relu')
 
@@ -27,8 +30,11 @@ class CriticNetwork(keras.Model):
         self.q = Dense(1, activation=None)
 
     def call(self, state, action):
-        state_value = self.fc1(state)
+        state_value = self.bn0(state)
+        state_value = self.fc1(state_value)
+        state_value = self.bn1(state_value)
         state_value = self.fc2(state_value)
+        state_value = self.bn2(state_value)
 
         action_value = self.action_value(action)
 
@@ -52,12 +58,18 @@ class ActorNetwork(keras.Model):
         self.checkpoint_file = os.path.join(
             self.chkpt_dir, self.model_name + "_ddpg.h5")
 
+        self.bn0 = BatchNormalization()
         self.fc1 = Dense(self.fc1_dims, activation='relu')
+        self.bn1 = BatchNormalization()
         self.fc2 = Dense(self.fc2_dims, activation='relu')
+        self.bn2 = BatchNormalization()
         self.mu = Dense(self.n_actions, activation='sigmoid')
 
     def call(self, state):
-        prob = self.fc1(state)
+        prob = self.bn0(state)
+        prob = self.fc1(prob)
+        prob = self.bn1(prob)
         prob = self.fc2(prob)
+        prob = self.bn2(prob)
         mu = self.mu(prob)
         return mu * self.bound

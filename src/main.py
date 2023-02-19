@@ -6,12 +6,12 @@ from Display import disp
 
 
 if __name__ == "__main__":
-    env = Environment(num_of_antennas=10, num_of_irs1=10, num_of_irs2=10,
+    env = Environment(num_of_antennas=5, num_of_irs1=5, num_of_irs2=5,
                       path_loss_exponent=2, irs1_to_antenna=20,
                       irs2_to_antenna=20, irs1_to_irs2=10)
 
     U1 = env.CreateUser(distance_to_antenna=40, distance_to_irs1=20, distance_to_irs2=20,
-                        noise_var=1e-5, los_to_antenna=True, los_to_irs1=True,
+                        noise_var=1e-5, los_to_antenna=False, los_to_irs1=True,
                         los_to_irs2=True, sinr_threshold=1, penalty=0, allocated_power=1)
 
     # U2 = env.CreateUser(distance_to_antenna=40, distance_to_irs1=10, distance_to_irs2=20,
@@ -21,16 +21,18 @@ if __name__ == "__main__":
     agent = Agent(num_states=env.num_of_users, bound=2,
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N)
 
-    num_of_episodes = 1
-    num_of_iterations = 600
+    num_of_episodes = 50
+    num_of_iterations = 200
 
     score_history = np.zeros((num_of_episodes,))
     rewards = np.zeros((num_of_episodes, num_of_iterations))
     sumrate = np.zeros((num_of_episodes, num_of_iterations))
     U1_SINR = np.zeros((num_of_episodes, num_of_iterations))
+
     # U2_SINR = np.zeros((num_of_episodes, num_of_iterations))
     # users_sinr = np.zeros(
     #     (env.num_of_users, num_of_episodes, num_of_iterations))
+
     Old_Avg = 0
     obs = env.State()
 
@@ -41,13 +43,13 @@ if __name__ == "__main__":
 
             new_state, reward, sumrate[ep][iter], SINRs = env.Step(action)
 
-            if iter == 0 or iter == num_of_iterations - 1:
-                print("****************************************************************")
-                print("action: ", np.array(action))
-                print("state: ", obs)
-                print("New state: ", new_state)
-                print("SINR: ", SINRs)
-                print("****************************************************************")
+            # if iter == 0 or iter == num_of_iterations - 1:
+            #     print("****************************************************************")
+            #     print("action: ", np.array(action))
+            #     print("state: ", obs)
+            #     print("New state: ", new_state)
+            #     print("SINR: ", SINRs)
+            #     print("****************************************************************")
 
             agent.remember(np.array(obs), np.array(action),
                            reward, np.array(new_state))
@@ -72,4 +74,4 @@ if __name__ == "__main__":
          u1_sinr=U1_SINR, u2_sinr=None, mean=False,
          title=f"N = {env.N}, M1 = {env.M1}, M2 = {env.M2}")
 
-    agent.save_models()
+    # agent.save_models()

@@ -6,12 +6,12 @@ from Display import disp
 
 
 if __name__ == "__main__":
-    env = Environment(num_of_antennas=8, num_of_irs1=10, num_of_irs2=10,
+    env = Environment(num_of_antennas=10, num_of_irs1=10, num_of_irs2=10,
                       path_loss_exponent=2, irs1_to_antenna=20,
                       irs2_to_antenna=20, irs1_to_irs2=10)
 
-    U1 = env.CreateUser(distance_to_antenna=40, distance_to_irs1=20, distance_to_irs2=10,
-                        noise_var=1e-4, los_to_antenna=False, los_to_irs1=False,
+    U1 = env.CreateUser(distance_to_antenna=40, distance_to_irs1=20, distance_to_irs2=20,
+                        noise_var=1e-5, los_to_antenna=True, los_to_irs1=True,
                         los_to_irs2=True, sinr_threshold=1, penalty=0, allocated_power=1)
 
     # U2 = env.CreateUser(distance_to_antenna=40, distance_to_irs1=10, distance_to_irs2=20,
@@ -23,8 +23,8 @@ if __name__ == "__main__":
     agent = Agent(num_states=env.num_of_users, bound=1,
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N)
 
-    num_of_episodes = 100
-    num_of_iterations = 200
+    num_of_episodes = 1
+    num_of_iterations = 600
 
     score_history = np.zeros((num_of_episodes,))
     rewards = np.zeros((num_of_episodes, num_of_iterations))
@@ -40,14 +40,19 @@ if __name__ == "__main__":
         score = 0
         for iter in range(num_of_iterations):
             action = agent.choose_action(obs)
-            # if iter == 0 or iter == num_of_iterations - 1:
-            #     print("****************************************************************")
-            #     print("action: ", action)
-            #     print("state: ", obs)
-            #     print("****************************************************************")
 
             new_state, reward, sumrate[ep][iter], SINRs = env.Step(action)
-            agent.remember(obs, action, reward, new_state)
+
+            if iter == 0 or iter == num_of_iterations - 1:
+                print("****************************************************************")
+                print("action: ", np.array(action))
+                print("state: ", obs)
+                print("New state: ", new_state)
+                print("SINR: ", SINRs)
+                print("****************************************************************")
+
+            agent.remember(np.array(obs), np.array(action),
+                           reward, np.array(new_state))
             agent.learn()
             obs = new_state
             score += reward

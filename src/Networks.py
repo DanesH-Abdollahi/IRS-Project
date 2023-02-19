@@ -54,10 +54,10 @@ class ActorNetwork(keras.Model):
 
         self.fc1 = Dense(self.fc1_dims, activation='relu')
         self.fc2 = Dense(self.fc2_dims, activation='relu')
-        self.mu = Dense(self.n_actions, activation='softsign')
+        self.mu = Dense(self.n_actions, activation='sigmoid')
 
     def call(self, state):
         prob = self.fc1(state)
         prob = self.fc2(prob)
-        mu = self.mu(prob)
+        mu = (self.mu(prob) * 2) - 1
         return mu * self.bound

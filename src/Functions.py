@@ -8,5 +8,5 @@ def RealToPhase(input):
 
 
 def Random_Complex_Mat(Row: int, Col: int):
-    Matrix = np.random.uniform(low=-pi, high=pi, size=(Row, Col))
+    Matrix = np.random.uniform(low=0, high=2*pi, size=(Row, Col))
     return e ** (Matrix * 1j)

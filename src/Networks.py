@@ -59,5 +59,5 @@ class ActorNetwork(keras.Model):
     def call(self, state):
         prob = self.fc1(state)
         prob = self.fc2(prob)
-        mu = (self.mu(prob) * 2) - 1
+        mu = self.mu(prob)
         return mu * self.bound

@@ -19,7 +19,7 @@ class Agent:
         self.noise = noise
         self.bounds = bound
         self.max_action = bound
-        self.min_action = -1 * bound
+        self.min_action = 0
 
         self.actor = ActorNetwork(fc1_dims=fc1, fc2_dims=fc2, bound=self.bounds,
                                   n_actions=self.n_actions, name='Actor')

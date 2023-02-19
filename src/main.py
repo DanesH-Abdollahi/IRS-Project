@@ -18,9 +18,7 @@ if __name__ == "__main__":
     #                     noise_var=1e-4, los_to_antenna=True, los_to_irs1=True,
     #                     los_to_irs2=True, sinr_threshold=1, penalty=3, allocated_power=1)
 
-    # env.InitialState()
-
-    agent = Agent(num_states=env.num_of_users, bound=1,
+    agent = Agent(num_states=env.num_of_users, bound=2,
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N)
 
     num_of_episodes = 1

@@ -9,7 +9,7 @@ from Networks import ActorNetwork, CriticNetwork
 class Agent:
     def __init__(self, num_states, n_actions, bound, alpha=0.001, beta=0.002,
                  env=None, gamma=0.99, max_size=100000, tau=0.005,
-                 fc1=256, fc2=256, batch_size=64, noise=0.002):
+                 fc1=256, fc2=256, batch_size=64, noise=0.05):
         self.gamma = gamma
         self.tau = tau
         self.memory = Buffer(num_states, n_actions,
@@ -70,9 +70,9 @@ class Agent:
         state = tf.convert_to_tensor([observation], dtype=tf.float32)
         actions = self.actor(state)
 
-        # if not evaluate:
-        #     actions += tf.random.normal(shape=[self.n_actions], mean=0.0,
-        #                                 stddev=self.noise)
+        if not evaluate:
+            actions += tf.random.normal(shape=[self.n_actions], mean=0.0,
+                                        stddev=self.noise)
 
         actions = tf.clip_by_value(actions, self.min_action, self.max_action)
 

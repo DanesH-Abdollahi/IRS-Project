@@ -6,13 +6,13 @@ from Display import disp
 
 
 if __name__ == "__main__":
-    env = Environment(num_of_antennas=10, num_of_irs1=15, num_of_irs2=15,
+    env = Environment(num_of_antennas=10, num_of_irs1=20, num_of_irs2=20,
                       path_loss_exponent=2, irs1_to_antenna=20,
                       irs2_to_antenna=20, irs1_to_irs2=10)
 
-    U1 = env.CreateUser(distance_to_antenna=40, distance_to_irs1=20, distance_to_irs2=20,
+    U1 = env.CreateUser(distance_to_antenna=50, distance_to_irs1=20, distance_to_irs2=20,
                         noise_var=1e-5, los_to_antenna=False, los_to_irs1=True,
-                        los_to_irs2=True, sinr_threshold=1, penalty=0, allocated_power=1)
+                        los_to_irs2=False, sinr_threshold=1, penalty=0, allocated_power=1)
 
     # U2 = env.CreateUser(distance_to_antenna=40, distance_to_irs1=10, distance_to_irs2=20,
     #                     noise_var=1e-4, los_to_antenna=True, los_to_irs1=True,
@@ -22,7 +22,7 @@ if __name__ == "__main__":
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N)
 
     num_of_episodes = 60
-    num_of_iterations = 200
+    num_of_iterations = 150
 
     score_history = np.zeros((num_of_episodes,))
     rewards = np.zeros((num_of_episodes, num_of_iterations))

@@ -72,7 +72,7 @@ if __name__ == "__main__":
         Old_Avg = New_Avg
 
     plot(score_history=score_history, sumrate=sumrate,
-         u1_sinr=U1_SINR, u2_sinr=U2_SINR, mean=False,
+         u1_sinr=U1_SINR, u2_sinr=U2_SINR, mean=True,
          title=f"N = {env.N}, M1 = {env.M1}, M2 = {env.M2}")
 
     # agent.save_models()

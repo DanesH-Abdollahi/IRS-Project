@@ -30,11 +30,11 @@ class CriticNetwork(keras.Model):
         self.q = Dense(1, activation=None)
 
     def call(self, state, action):
-        state_value = self.bn0(state)
-        state_value = self.fc1(state_value)
-        state_value = self.bn1(state_value)
+        # state_value = self.bn0(state)
+        state_value = self.fc1(state)
+        # state_value = self.bn1(state_value)
         state_value = self.fc2(state_value)
-        state_value = self.bn2(state_value)
+        # state_value = self.bn2(state_value)
 
         action_value = self.action_value(action)
 
@@ -66,10 +66,10 @@ class ActorNetwork(keras.Model):
         self.mu = Dense(self.n_actions, activation='sigmoid')
 
     def call(self, state):
-        prob = self.bn0(state)
-        prob = self.fc1(prob)
-        prob = self.bn1(prob)
+        # prob = self.bn0(state)
+        prob = self.fc1(state)
+        # prob = self.bn1(prob)
         prob = self.fc2(prob)
-        prob = self.bn2(prob)
+        # prob = self.bn2(prob)
         mu = self.mu(prob)
         return mu * self.bound

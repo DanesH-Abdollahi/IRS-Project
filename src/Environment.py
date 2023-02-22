@@ -51,12 +51,12 @@ class Environment:
     def CalculateSINR(self):
         SINR = []
         for i in enumerate(self.Users):
-            numerator = np.absolute(
+            numerator = np.abs(
                 (
                     i[1].hsu
                     + (i[1].h1u @ self.Psi1) @ self.Hs1
                     + (i[1].h2u @ self.Psi2) @ self.Hs2
-                    + (i[1].h2u @ self.Psi2) @ self.Hs2
+                    # + (i[1].h2u @ self.Psi2) @ self.Hs2
                     + ((i[1].h1u @ self.Psi1) @
                        self.H21) @ (self.Psi2 @ self.Hs2)
                     + ((i[1].h2u @ self.Psi2) @
@@ -67,15 +67,15 @@ class Environment:
             denominator = i[1].noise_power
             for j in enumerate(self.Users):
                 if j[0] != i[0]:
-                    denominator += np.absolute(
+                    denominator += np.abs(
                         (
-                            j[1].hsu
-                            + (j[1].h1u @ self.Psi1) @ self.Hs1
-                            + (j[1].h2u @ self.Psi2) @ self.Hs2
-                            + (j[1].h2u @ self.Psi2) @ self.Hs2
-                            + ((j[1].h1u @ self.Psi1) @
+                            i[1].hsu
+                            + (i[1].h1u @ self.Psi1) @ self.Hs1
+                            + (i[1].h2u @ self.Psi2) @ self.Hs2
+                            # + (j[1].h2u @ self.Psi2) @ self.Hs2
+                            + ((i[1].h1u @ self.Psi1) @
                                self.H21) @ (self.Psi2 @ self.Hs2)
-                            + ((j[1].h2u @ self.Psi2) @
+                            + ((i[1].h2u @ self.Psi2) @
                                self.H12) @ (self.Psi1 @ self.Hs1)
                         ) @ j[1].w
 
@@ -83,7 +83,8 @@ class Environment:
 
             SINR.append((numerator / denominator)[0, 0])
 
-        self.SINR = [10*log10(i) for i in SINR]
+        # self.SINR = [10*log10(i) for i in SINR]
+        self.SINR = SINR
         self.SumRate = sum(log2(1 + i) for i in SINR)
 
     def Reward(self) -> float:

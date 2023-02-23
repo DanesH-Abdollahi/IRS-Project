@@ -36,11 +36,11 @@ class Environment:
     def CreateUser(self, *, distance_to_antenna: float, distance_to_irs1: float,
                    distance_to_irs2: float, noise_var: float, los_to_antenna: bool,
                    los_to_irs1: bool, los_to_irs2: bool, sinr_threshold: float,
-                   penalty: float, allocated_power: float):
+                   penalty: float, allocated_power: float, weight: float):
 
         Usr = User(distance_to_antenna, distance_to_irs1, distance_to_irs2,
                    noise_var, los_to_antenna, los_to_irs1, los_to_irs2,
-                   sinr_threshold, penalty, allocated_power)
+                   sinr_threshold, penalty, allocated_power, weight)
 
         Usr.GenerateMatrixes(self)
         self.Users.append(Usr)
@@ -85,10 +85,15 @@ class Environment:
 
         # self.SINR = [10*log10(i) for i in SINR]
         self.SINR = SINR
-        self.SumRate = sum(log2(1 + i) for i in SINR)
+        self.SumRate = sum(log2(1 + ii) for ii in SINR)
 
     def Reward(self) -> float:
-        reward = self.SumRate
+
+        weighted_reward = sum(
+            self.Users[i[0]].weight*log2(1 + i[1]) for i in enumerate(self.SINR))
+
+        # reward = self.SumRate
+        reward = weighted_reward
         for i in enumerate(self.SINR):
             if i[1] < self.Users[i[0]].sinr_threshold:
                 reward -= self.Users[i[0]].penalty

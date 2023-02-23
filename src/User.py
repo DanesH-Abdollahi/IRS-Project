@@ -5,7 +5,7 @@ from cmath import sqrt
 class User:
     def __init__(self, d_from_antenna: float, d_from_irs1: float, d_from_irs2: float,
                  noise_var: float, los_to_antenna: bool, los_to_irs1: bool, los_to_irs2: bool,
-                 sinr_threshold: float, penalty: float, allocated_power: float) -> None:
+                 sinr_threshold: float, penalty: float, allocated_power: float, weight: float) -> None:
 
         self.distance_from_antenna = d_from_antenna
         self.distance_from_irs1 = d_from_irs1
@@ -18,7 +18,8 @@ class User:
         self.penalty = penalty                 # Penalty for not meeting SINR threshold
         self.allocated_power = allocated_power # Power allocated to user
         self.sinr_threshold = sinr_threshold   # dB
-
+        self.weight = weight                   # Weight of user
+        
         self.hsu = 0
         self.h1u = 0
         self.h2u = 0

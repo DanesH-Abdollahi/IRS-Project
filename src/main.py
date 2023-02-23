@@ -13,17 +13,17 @@ if __name__ == "__main__":
 
     U1 = env.CreateUser(distance_to_antenna=40, distance_to_irs1=10, distance_to_irs2=20,
                         noise_var=1e-4, los_to_antenna=False, los_to_irs1=True,
-                        los_to_irs2=False, sinr_threshold=1, penalty=0, allocated_power=1, weight=0.7)
+                        los_to_irs2=False, sinr_threshold=1, penalty=0, allocated_power=1, weight=1)
 
     U2 = env.CreateUser(distance_to_antenna=40, distance_to_irs1=20, distance_to_irs2=10,
                         noise_var=1e-4, los_to_antenna=True, los_to_irs1=True,
-                        los_to_irs2=True, sinr_threshold=1, penalty=0, allocated_power=1, weight=0.3)
+                        los_to_irs2=True, sinr_threshold=1, penalty=0, allocated_power=1, weight=1)
 
     agent = Agent(num_states=env.num_of_users, bound=2, batch_size=64, max_size=100000,
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N,
                   noise=0.02, alpha=0.0002, beta=0.0004, fc1=1024, fc2=512)
 
-    num_of_episodes = 150
+    num_of_episodes = 100
     num_of_iterations = 100
 
     score_history = np.zeros((num_of_episodes,))

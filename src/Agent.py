@@ -9,7 +9,7 @@ from Networks import ActorNetwork, CriticNetwork
 class Agent:
     def __init__(self, num_states, n_actions, bound, alpha=0.001, beta=0.002,
                  env=None, gamma=0.99, max_size=100000, tau=0.005,
-                 fc1=256, fc2=256, batch_size=64, noise=0.05):
+                 fc1=512, fc2=256, batch_size=128, noise=0.055):
         self.gamma = gamma
         self.tau = tau
         self.memory = Buffer(num_states, n_actions,

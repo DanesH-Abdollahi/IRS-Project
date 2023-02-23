@@ -3,7 +3,7 @@ import tensorflow as tf
 
 
 class Buffer:
-    def __init__(self, num_states, num_actions, buffer_capacity=100000, batch_size=64):
+    def __init__(self, num_states, num_actions, buffer_capacity=1000000, batch_size=64):
         self.buffer_capacity = buffer_capacity
         self.batch_size = batch_size
         self.buffer_counter = 0

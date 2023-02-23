@@ -27,6 +27,8 @@ class CriticNetwork(keras.Model):
         self.concat = tf.keras.layers.Concatenate()
         self.output_layer1 = Dense(self.fc1_dims, activation="relu")
         self.output_layer2 = Dense(self.fc2_dims, activation="relu")
+        # self.output_layer3 = Dense(self.fc2_dims, activation="relu")
+        # self.output_layer4 = Dense(32, activation="relu")
         self.q = Dense(1, activation=None)
 
     def call(self, state, action):
@@ -39,8 +41,11 @@ class CriticNetwork(keras.Model):
         action_value = self.action_value(action)
 
         action_value = self.concat([state_value, action_value])
+        action_value = self.bn1(action_value)
         action_value = self.output_layer1(action_value)
         action_value = self.output_layer2(action_value)
+        # action_value = self.output_layer3(action_value)
+        # action_value = self.output_layer4(action_value)
         q = self.q(action_value)
         return q
 
@@ -61,15 +66,23 @@ class ActorNetwork(keras.Model):
         self.bn0 = BatchNormalization()
         self.fc1 = Dense(self.fc1_dims, activation='relu')
         self.bn1 = BatchNormalization()
-        self.fc2 = Dense(self.fc2_dims, activation='relu')
+        self.fc2 = Dense(self.fc1_dims, activation='relu')
         self.bn2 = BatchNormalization()
+        self.fc3 = Dense(self.fc2_dims, activation='relu')
+        # self.fc4 = Dense(self.fc2_dims, activation='relu')
+        # self.fc5 = Dense(128, activation='relu')
+        # self.fc6 = Dense(64, activation='relu')
         self.mu = Dense(self.n_actions, activation='sigmoid')
 
     def call(self, state):
-        # prob = self.bn0(state)
-        prob = self.fc1(state)
+        prob = self.bn0(state)
+        prob = self.fc1(prob)
         # prob = self.bn1(prob)
         prob = self.fc2(prob)
+        prob = self.fc3(prob)
+        # prob = self.fc4(prob)
+        # prob = self.fc5(prob)
+        # prob = self.fc6(prob)
         # prob = self.bn2(prob)
         mu = self.mu(prob)
         return mu * self.bound

@@ -19,10 +19,10 @@ if __name__ == "__main__":
                         noise_var=1e-4, los_to_antenna=True, los_to_irs1=True,
                         los_to_irs2=True, sinr_threshold=1, penalty=0, allocated_power=1)
 
-    agent = Agent(num_states=env.num_of_users, bound=2,
+    agent = Agent(num_states=env.num_of_users, bound=2, batch_size=128, max_size=1000000,
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N)
 
-    num_of_episodes = 200
+    num_of_episodes = 150
     num_of_iterations = 150
 
     score_history = np.zeros((num_of_episodes,))
@@ -62,6 +62,7 @@ if __name__ == "__main__":
             U1_SINR[ep][iter] = SINRs[0]
             U2_SINR[ep][iter] = SINRs[1]
 
+        # agent.learn()
         score_history[ep] = score
         New_Avg = score_history[:ep + 1].mean()
 

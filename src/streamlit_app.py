@@ -71,12 +71,12 @@ with st.form("Run Time Variables"):
     col1, col2 = st.columns(2)
     num_of_iterations = col2.text_input("Number of Iterations", 150)
     num_of_episodes = col1.text_input("Number of Episodes", 150)
-    mean_reward = col1.text_input(
-        "Mean Reward", placeholder="0 for False, 1 for True")
+    # mean_reward = col1.text_input(
+    #     "Mean Reward", placeholder="0 for False, 1 for True")
     submitted = st.form_submit_button("Submit")
 
 run_button = st.button("Run")
 
 if run_button:
     run(env=env, num_of_iterations=int(num_of_iterations),
-        num_of_episodes=int(num_of_episodes), mean_reward=bool(mean_reward))
+        num_of_episodes=int(num_of_episodes))

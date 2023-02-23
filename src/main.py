@@ -6,7 +6,7 @@ from Display import disp
 import streamlit as st
 
 
-def run(env, num_of_episodes, num_of_iterations, mean_reward):
+def run(env, num_of_episodes, num_of_iterations):
 
     agent = Agent(num_states=env.num_of_users, bound=2, batch_size=64, max_size=100000,
                   env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N,
@@ -46,17 +46,34 @@ def run(env, num_of_episodes, num_of_iterations, mean_reward):
         score_history[ep] = score
         New_Avg = score_history[:ep + 1].mean()
 
-        disp(episod=ep, score=score, score_history=score_history,
-             New_Avg=New_Avg, Old_Avg=Old_Avg)
+        st.header("Results")
+        if ep >= 1:
+            fig1.empty()
+            fig2.empty()
+            fig3.empty()
+            fig4.empty()
+
+        fig1, fig2, fig3, fig4 = plot(score_history=score_history[:ep + 1],
+                                      sumrate=np.reshape(
+            sumrate[:ep + 1, :], ((ep + 1) * num_of_iterations,)),
+            u1_sinr=np.reshape(
+            U1_SINR[:ep + 1, :], ((ep + 1) * num_of_iterations,)),
+            u2_sinr=np.reshape(
+            U2_SINR[:ep + 1, :], ((ep + 1) * num_of_iterations,)),
+            episode=ep+1,
+            title=f"N = {env.N}, M1 = {env.M1}, M2 = {env.M2}")
+
+        # disp(episod=ep, score=score, score_history=score_history,
+        #      New_Avg=New_Avg, Old_Avg=Old_Avg)
 
         # obs = env.Reset()
         Old_Avg = New_Avg
 
         my_bar.progress((ep + 1) / num_of_episodes, text=progress_text)
 
-    st.header("Results")
-    plot(score_history=score_history, sumrate=sumrate,
-         u1_sinr=U1_SINR, u2_sinr=U2_SINR, mean=False,
-         title=f"N = {env.N}, M1 = {env.M1}, M2 = {env.M2}")
+    # st.header("Results")
+    # plot(score_history=score_history, sumrate=sumrate,
+    #      u1_sinr=U1_SINR, u2_sinr=U2_SINR,
+    #      title=f"N = {env.N}, M1 = {env.M1}, M2 = {env.M2}")
 
     # agent.save_models()

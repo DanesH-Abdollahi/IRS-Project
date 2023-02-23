@@ -1,6 +1,5 @@
 import streamlit as st
 from Environment import Environment
-from Agent import Agent
 from main import run
 
 st.header("Environment Variables")

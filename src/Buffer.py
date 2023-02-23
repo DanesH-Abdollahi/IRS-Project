@@ -1,6 +1,4 @@
 import numpy as np
-import tensorflow as tf
-
 
 class Buffer:
     def __init__(self, num_states, num_actions, buffer_capacity=1000000, batch_size=64):

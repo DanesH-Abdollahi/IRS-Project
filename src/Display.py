@@ -1,6 +1,4 @@
-from termcolor import colored
 import streamlit as st
-
 
 def disp(*, episod, score, score_history, New_Avg, Old_Avg,):
     if score >= Old_Avg:

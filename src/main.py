@@ -45,7 +45,6 @@ def run(env, num_of_episodes, num_of_iterations):
         score_history[ep] = score
         New_Avg = score_history[:ep + 1].mean()
 
-        st.header("Results")
         if ep >= 1:
             fig1.empty()
             fig2.empty()

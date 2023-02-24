@@ -12,7 +12,7 @@ def plot(*, episode, score_history, sumrate, u1_sinr, u2_sinr=None, title: str =
     plt.ylabel('Score')
     plt.xlabel('Episode')
     plt.grid(1)
-    plt.savefig('../tmp_results/Score.png')
+    # plt.savefig('../tmp_results/Score.png')
     figure1.pyplot(fig)
 
     # Plot the sumrate

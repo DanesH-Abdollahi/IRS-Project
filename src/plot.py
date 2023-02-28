@@ -20,7 +20,8 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
     plt.ylabel('Score')
     plt.xlabel('Episode')
     plt.grid(1)
-    plt.savefig('../tmp_results/Score.png')
+    # plt.savefig('../tmp_results/Score.png')
+    plt.savefig('../../Score.png')
     plt.show()
 
     # Plot the sumrate
@@ -32,7 +33,8 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
     plt.axhline(y=sumrate.mean(), xmin=0, xmax=1, color='r', label='Mean')
     plt.axhline(y=sumrate.max(), xmin=0, xmax=1, color='k', label='Max')
     plt.legend(bbox_to_anchor=(1.0, 1), loc='upper left')
-    plt.savefig('../tmp_results/Sumrate.png')
+    # plt.savefig('../tmp_results/Sumrate.png')
+    plt.savefig('../../Sumrate.png')
     plt.show()
 
     # Plot the U1_SINR
@@ -45,7 +47,8 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
     plt.axhline(y=u1_sinr.mean(), xmin=0, xmax=1, color='r', label='Mean')
     plt.axhline(y=u1_sinr.max(), xmin=0, xmax=1, color='k', label='Max')
     plt.legend(bbox_to_anchor=(1.0, 1), loc='upper left')
-    plt.savefig('../tmp_results/U1_SINR.png')
+    # plt.savefig('../tmp_results/U1_SINR.png')
+    plt.savefig('../../U1_SINR.png')
     plt.show()
 
     if u2_sinr is not None:
@@ -59,5 +62,6 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
         plt.axhline(y=u2_sinr.mean(), xmin=0, xmax=1, color='r', label='Mean')
         plt.axhline(y=u2_sinr.max(), xmin=0, xmax=1, color='k', label='Max')
         plt.legend(bbox_to_anchor=(1.0, 1), loc='upper left')
-        plt.savefig('../tmp_results/U2_SINR.png')
+        # plt.savefig('../tmp_results/U2_SINR.png')
+        plt.savefig('../../U2_SINR.png')
         plt.show()

@@ -71,8 +71,11 @@ class Agent:
         actions = self.actor(state)
 
         if not evaluate:
-            actions += tf.random.normal(shape=[self.n_actions], mean=0.0,
+            noise_tf = tf.random.normal(shape=[self.n_actions-2], mean=0.0,
                                         stddev=self.noise)
+
+            tmp = tf.zeros([2])
+            actions += tf.concat([noise_tf, tmp], axis=0)
 
         actions = tf.clip_by_value(actions, self.min_action, self.max_action)
 

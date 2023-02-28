@@ -72,11 +72,17 @@ class ActorNetwork(keras.Model):
         # self.fc4 = Dense(self.fc2_dims, activation='relu')
         # self.fc5 = Dense(128, activation='relu')
         # self.fc6 = Dense(64, activation='relu')
-        self.mu = Dense(self.n_actions, activation='sigmoid')
+        self.mu = Dense(self.n_actions - 2, activation='sigmoid')
+
+        self.fc4 = Dense(self.fc2_dims, activation='relu')
+        self.power_split = Dense(2, activation='sigmoid')
 
     def call(self, state):
         prob = self.bn0(state)
+
+        pwr_split = self.fc4(prob)
         prob = self.fc1(prob)
+
         # prob = self.bn1(prob)
         prob = self.fc2(prob)
         prob = self.fc3(prob)
@@ -84,5 +90,9 @@ class ActorNetwork(keras.Model):
         # prob = self.fc5(prob)
         # prob = self.fc6(prob)
         # prob = self.bn2(prob)
-        mu = self.mu(prob)
-        return mu * self.bound
+        mu = self.mu(prob) * self.bound
+
+        pwr_split = self.power_split(pwr_split)
+        
+        out = tf.concat([mu, pwr_split], axis=1)
+        return out

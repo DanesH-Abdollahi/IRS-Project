@@ -20,7 +20,7 @@ if __name__ == "__main__":
                         los_to_irs2=True, sinr_threshold=1, penalty=0, allocated_power=1, weight=1)
 
     agent = Agent(num_states=env.num_of_users, bound=2, batch_size=64, max_size=100000,
-                  env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N,
+                  env=env, n_actions=env.M1 + env.M2 + len(env.Users) * env.N + 2,
                   noise=0.02, alpha=0.0002, beta=0.0004, fc1=1024, fc2=512)
 
     # env.Hs1 = np.array([[-0.04104735+0.02855022j,  0.01969476-0.04595777j,
@@ -118,10 +118,7 @@ if __name__ == "__main__":
     rewards = np.zeros((num_of_episodes, num_of_iterations))
     sumrate = np.zeros((num_of_episodes, num_of_iterations))
     U1_SINR = np.zeros((num_of_episodes, num_of_iterations))
-
     U2_SINR = np.zeros((num_of_episodes, num_of_iterations))
-    # users_sinr = np.zeros(
-    #     (env.num_of_users, num_of_episodes, num_of_iterations))
 
     Old_Avg = 0
     obs = env.State()

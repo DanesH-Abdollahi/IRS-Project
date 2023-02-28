@@ -7,7 +7,7 @@ from math import log2, log10
 class Environment:
     def __init__(self, *, num_of_antennas: int, num_of_irs1: int, num_of_irs2: int,
                  path_loss_exponent: float, irs1_to_antenna: float,
-                 irs2_to_antenna: float, irs1_to_irs2: float) -> None:
+                 irs2_to_antenna: float, irs1_to_irs2: float, transmitted_power: float) -> None:
 
         self.N = num_of_antennas  # Number of Antennas
         self.M1 = num_of_irs1  # Number of Elements of IRS1
@@ -17,7 +17,7 @@ class Environment:
         self.irs1_to_antenna = irs1_to_antenna  # The Distance Between IRS1 & Antenna
         self.irs2_to_antenna = irs2_to_antenna  # The Distance Between IRS2 & Antenna
         self.irs1_to_irs2 = irs1_to_irs2  # The Distance Between IRS1 & IRS2
-
+        self.transmitted_power = transmitted_power  # The Power Transmitted to Antenna
         self.Users = []
         self.SINR = []
         self.SumRate = 0
@@ -32,6 +32,7 @@ class Environment:
         # Generate Initial IRS Coefficient Matrix(es)
         self.Psi1 = np.diag(Random_Complex_Mat(1, self.M1)[0])
         self.Psi2 = np.diag(Random_Complex_Mat(1, self.M2)[0])
+        # self.W = np.zeros((self.N, 2), dtype=complex)
 
     def CreateUser(self, *, distance_to_antenna: float, distance_to_irs1: float,
                    distance_to_irs2: float, noise_var: float, los_to_antenna: bool,
@@ -46,6 +47,7 @@ class Environment:
         self.Users.append(Usr)
         self.SINR.append(0)
         self.num_of_users += 1
+        # self.W[:, self.num_of_users - 1] = Usr.w[:, 0]
         return Usr
 
     def CalculateSINR(self):
@@ -130,7 +132,11 @@ class Environment:
             u[1].w = RealToPhase(
                 action[self.M1 + self.M2 + (u[0] * self.N): self.M1 + self.M2+(u[0] * self.N) + self.N])
             u[1].w = (u[1].w).reshape(self.N, 1)
-            u[1].w = (u[1].w / sqrt(self.N)) * u[1].allocated_power
+
+            u[1].w = (u[1].w / sqrt(self.N)) * self.transmitted_power * (
+                action[-2 + u[0]] / (action[-2] + action[-1]))
+
+            # self.W[:, u[0]] = u[1].w[:, 0]
 
         new_state = self.State()
         reward = self.Reward()

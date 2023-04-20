@@ -74,7 +74,10 @@ class Agent:
             noise_tf = tf.random.normal(shape=[self.n_actions-2], mean=0.0,
                                         stddev=self.noise)
 
-            tmp = tf.zeros([2])
+            tmp = tf.random.normal(shape=[2], mean=0.0,
+                                   stddev=self.noise/2)
+
+            tmp = tf.clip_by_value(tmp, 0, 1)
             actions += tf.concat([noise_tf, tmp], axis=0)
 
         actions = tf.clip_by_value(actions, self.min_action, self.max_action)

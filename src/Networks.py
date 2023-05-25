@@ -75,12 +75,12 @@ class ActorNetwork(keras.Model):
         self.mu = Dense(self.n_actions - 2, activation='sigmoid')
 
         self.fc4 = Dense(self.fc2_dims, activation='relu')
-        self.power_split = Dense(2, activation='sigmoid')
+        # self.power_split = Dense(2, activation='sigmoid')
 
     def call(self, state):
         prob = self.bn0(state)
 
-        pwr_split = self.fc4(prob)
+        # pwr_split = self.fc4(prob)
         prob = self.fc1(prob)
 
         # prob = self.bn1(prob)
@@ -92,7 +92,33 @@ class ActorNetwork(keras.Model):
         # prob = self.bn2(prob)
         mu = self.mu(prob) * self.bound
 
-        pwr_split = self.power_split(pwr_split)
-        
-        out = tf.concat([mu, pwr_split], axis=1)
-        return out
+        # pwr_split = self.power_split(pwr_split)
+
+        # out = tf.concat([mu, pwr_split], axis=1)
+        return mu
+
+
+class PowerActorNetwork(keras.Model):
+    def __init__(self, fc1_dims, fc2_dims, num_of_users, name="Actor", chkpt_dir="../tmp/ddpg"):
+        super().__init__()
+        self.fc1_dims = fc1_dims
+        self.fc2_dims = fc2_dims
+        self.model_name = name
+        self.chkpt_dir = chkpt_dir
+        self.checkpoint_file = os.path.join(
+            self.chkpt_dir, self.model_name + "_ddpg.h5")
+
+        self.bn0 = BatchNormalization()
+        self.fc1 = Dense(self.fc1_dims, activation='relu')
+        self.fc2 = Dense(self.fc2_dims, activation='relu')
+        self.fc3 = Dense(16, activation='relu')
+        self.fc4 = Dense(num_of_users, activation='softmax')
+
+    def call(self, state):
+        power = self.bn0(state)
+        power = self.fc1(power)
+        # power = self.fc2(power)
+        power = self.fc3(power)
+        power = self.fc4(power)
+        # power = tf.ones_like(power)
+        return power

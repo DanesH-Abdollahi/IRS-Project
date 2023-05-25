@@ -3,7 +3,7 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.optimizers import Adam
 from Buffer import Buffer
-from Networks import ActorNetwork, CriticNetwork
+from Networks import ActorNetwork, CriticNetwork, PowerActorNetwork
 
 
 class Agent:
@@ -32,10 +32,18 @@ class Agent:
         self.target_critic = CriticNetwork(
             fc1_dims=fc1, fc2_dims=fc2, name='TargetCritic')
 
+        self.power = PowerActorNetwork(
+            fc1_dims=128, fc2_dims=32, num_of_users=env.num_of_users, name='PowerActor')
+        self.target_power = PowerActorNetwork(
+            fc1_dims=128, fc2_dims=32, num_of_users=env.num_of_users, name='TargetPower')
+
         self.actor.compile(optimizer=Adam(learning_rate=alpha))
         self.critic.compile(optimizer=Adam(learning_rate=beta))
         self.target_actor.compile(optimizer=Adam(learning_rate=alpha))
         self.target_critic.compile(optimizer=Adam(learning_rate=beta))
+        
+        self.power.compile(optimizer=Adam(learning_rate=alpha/2))
+        self.target_power.compile(optimizer=Adam(learning_rate=beta/2))
 
         self.update_network_parameters(tau=1)  # Hard update
 
@@ -47,6 +55,9 @@ class Agent:
             a.assign(b * tau + a * (1 - tau))
 
         for (a, b) in zip(self.target_critic.weights, self.critic.weights):
+            a.assign(b * tau + a * (1 - tau))
+
+        for (a, b) in zip(self.target_power.weights, self.power.weights):
             a.assign(b * tau + a * (1 - tau))
 
     def remember(self, state, action, reward, new_state):
@@ -69,18 +80,25 @@ class Agent:
     def choose_action(self, observation, evaluate=False):
         state = tf.convert_to_tensor([observation], dtype=tf.float32)
         actions = self.actor(state)
+        power_action = self.power(state)
 
         if not evaluate:
-            noise_tf = tf.random.normal(shape=[self.n_actions-2], mean=0.0,
-                                        stddev=self.noise)
+            action_noise = tf.random.normal(shape=[self.n_actions-2], mean=0.0,
+                                            stddev=self.noise)
+            actions += action_noise
 
-            tmp = tf.random.normal(shape=[2], mean=0.0,
-                                   stddev=self.noise/2)
+            power_noise = tf.random.normal(shape=[2], mean=0.0,
+                                           stddev=self.noise/5)
 
-            tmp = tf.clip_by_value(tmp, 0, 1)
-            actions += tf.concat([noise_tf, tmp], axis=0)
+            power_action += power_noise
+
+            # tmp = tf.clip_by_value(tmp, 0, 1)
+            # actions += tf.concat([noise_tf, tmp], axis=0)
 
         actions = tf.clip_by_value(actions, self.min_action, self.max_action)
+        power_action = tf.clip_by_value(power_action, 0.01, 1)
+        actions = tf.concat([actions, power_action], axis=1)
+        # actions = tf.clip_by_value(actions, self.min_action, self.max_action)
 
         return actions[0]
 
@@ -88,6 +106,10 @@ class Agent:
     def update(self, state_batch, action_batch, reward_batch, next_state_batch):
         with tf.GradientTape() as tape:
             target_actions = self.target_actor(next_state_batch)
+            target_power_action = self.target_power(next_state_batch)
+            target_actions = actions = tf.concat(
+                [target_actions, target_power_action], axis=1)
+
             y = reward_batch + self.gamma * \
                 self.target_critic(next_state_batch, target_actions)
             critic_value = self.critic(state_batch, action_batch)
@@ -100,6 +122,9 @@ class Agent:
 
         with tf.GradientTape() as tape:
             actions = self.actor(state_batch)
+            power_action = self.power(state_batch)
+            actions = tf.concat([actions, power_action], axis=1)
+
             critic_value = self.critic(state_batch, actions)
             actor_loss = -tf.math.reduce_mean(critic_value)
 

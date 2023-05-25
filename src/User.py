@@ -16,7 +16,7 @@ class User:
         self.los_to_irs1 = los_to_irs1         # Line of sight to IRS1
         self.los_to_irs2 = los_to_irs2         # Line of sight to IRS2
         self.penalty = penalty                 # Penalty for not meeting SINR threshold
-        self.allocated_power = allocated_power  # Power allocated to user
+        self.allocated_power = allocated_power # Power allocated to user
         self.sinr_threshold = sinr_threshold   # dB
         self.weight = weight                   # Weight of user
 

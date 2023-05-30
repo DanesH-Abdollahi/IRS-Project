@@ -130,7 +130,6 @@ dmypy.json
 
 #
 .vscode/
-Test.ipynb
 desktop.ini
 tmp/
 tmp_results/

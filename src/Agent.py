@@ -9,7 +9,7 @@ from Networks import ActorNetwork, CriticNetwork, PowerActorNetwork
 class Agent:
     def __init__(self, num_states, n_actions, bound, alpha=0.001, beta=0.002,
                  env=None, gamma=0.99, max_size=100000, tau=0.005,
-                 fc1=512, fc2=256, batch_size=128, noise=0.055):
+                 fc1=512, fc2=256, batch_size=256, noise=0.055):
         self.gamma = gamma
         self.tau = tau
         self.memory = Buffer(num_states, n_actions,
@@ -20,6 +20,7 @@ class Agent:
         self.bounds = bound
         self.max_action = bound
         self.min_action = 0
+        self.env = env
 
         self.actor = ActorNetwork(fc1_dims=fc1, fc2_dims=fc2, bound=self.bounds,
                                   n_actions=self.n_actions, name='Actor')
@@ -41,7 +42,7 @@ class Agent:
         self.critic.compile(optimizer=Adam(learning_rate=beta))
         self.target_actor.compile(optimizer=Adam(learning_rate=alpha))
         self.target_critic.compile(optimizer=Adam(learning_rate=beta))
-        
+
         self.power.compile(optimizer=Adam(learning_rate=alpha/2))
         self.target_power.compile(optimizer=Adam(learning_rate=beta/2))
 
@@ -83,12 +84,13 @@ class Agent:
         power_action = self.power(state)
 
         if not evaluate:
-            action_noise = tf.random.normal(shape=[self.n_actions-2], mean=0.0,
+            action_noise = tf.random.normal(shape=[self.n_actions - self.env.num_of_users + 1], mean=0.0,
                                             stddev=self.noise)
+            # print(action_noise.shape, actions.shape)
             actions += action_noise
 
-            power_noise = tf.random.normal(shape=[2], mean=0.0,
-                                           stddev=self.noise/5)
+            power_noise = tf.random.normal(shape=[self.env.num_of_users-1], mean=0.0,
+                                           stddev=self.noise/10)
 
             power_action += power_noise
 
@@ -96,7 +98,7 @@ class Agent:
             # actions += tf.concat([noise_tf, tmp], axis=0)
 
         actions = tf.clip_by_value(actions, self.min_action, self.max_action)
-        power_action = tf.clip_by_value(power_action, 0.01, 1)
+        power_action = tf.clip_by_value(power_action, 0, 1)
         actions = tf.concat([actions, power_action], axis=1)
         # actions = tf.clip_by_value(actions, self.min_action, self.max_action)
 

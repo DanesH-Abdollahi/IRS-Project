@@ -128,13 +128,15 @@ class Environment:
         self.Psi1 = np.diag(RealToPhase(action[0: self.M1]))
         self.Psi2 = np.diag(RealToPhase(action[self.M1: self.M1 + self.M2]))
 
+        action = np.append(action, 1 - action[-1])
+
         for u in enumerate(self.Users):
             u[1].w = RealToPhase(
                 action[self.M1 + self.M2 + (u[0] * self.N): self.M1 + self.M2+(u[0] * self.N) + self.N])
             u[1].w = (u[1].w).reshape(self.N, 1)
 
-            u[1].w = (u[1].w / sqrt(self.N)) * self.transmitted_power * (
-                action[-2 + u[0]] / (action[-2] + action[-1]))
+            u[1].w = (u[1].w / sqrt(self.N)) * \
+                self.transmitted_power * (action[-2 + u[0]])
 
             # self.W[:, u[0]] = u[1].w[:, 0]
 

@@ -86,21 +86,15 @@ class Agent:
         if not evaluate:
             action_noise = tf.random.normal(shape=[self.n_actions - self.env.num_of_users + 1], mean=0.0,
                                             stddev=self.noise)
-            # print(action_noise.shape, actions.shape)
             actions += action_noise
 
             power_noise = tf.random.normal(shape=[self.env.num_of_users-1], mean=0.0,
-                                           stddev=self.noise/10)
-
+                                           stddev=self.noise/5)
             power_action += power_noise
-
-            # tmp = tf.clip_by_value(tmp, 0, 1)
-            # actions += tf.concat([noise_tf, tmp], axis=0)
 
         actions = tf.clip_by_value(actions, self.min_action, self.max_action)
         power_action = tf.clip_by_value(power_action, 0, 1)
         actions = tf.concat([actions, power_action], axis=1)
-        # actions = tf.clip_by_value(actions, self.min_action, self.max_action)
 
         return actions[0]
 
@@ -130,9 +124,24 @@ class Agent:
             critic_value = self.critic(state_batch, actions)
             actor_loss = -tf.math.reduce_mean(critic_value)
 
-        actor_grad = tape.gradient(actor_loss, self.actor.trainable_variables)
+        actor_grad = tape.gradient(
+            actor_loss, self.actor.trainable_variables)
+
         self.actor.optimizer.apply_gradients(
             zip(actor_grad, self.actor.trainable_variables))
+
+        with tf.GradientTape() as tape:
+            actions = self.actor(state_batch)
+            power_action = self.power(state_batch)
+            actions = tf.concat([actions, power_action], axis=1)
+
+            actor_loss = - \
+                tf.math.reduce_mean(self.critic(state_batch, actions))
+
+        power_grad = tape.gradient(
+            actor_loss, self.power.trainable_variables)
+        self.power.optimizer.apply_gradients(
+            zip(power_grad, self.power.trainable_variables))
 
     def learn(self):
         if self.memory.buffer_counter < self.batch_size:

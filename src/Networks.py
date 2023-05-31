@@ -19,12 +19,12 @@ class CriticNetwork(keras.Model):
         self.bn0 = BatchNormalization()
         self.fc1 = Dense(self.fc1_dims, activation='relu')
         self.bn1 = BatchNormalization()
-        self.fc2 = Dense(self.fc2_dims, activation='relu')
+        # self.fc2 = Dense(self.fc2_dims, activation='relu')
         self.bn2 = BatchNormalization()
 
         self.action_value = Dense(self.fc1_dims, activation='relu')
         self.concat = tf.keras.layers.Concatenate()
-        self.output_layer1 = Dense(self.fc1_dims, activation="relu")
+        # self.output_layer1 = Dense(self.fc1_dims, activation="relu")
         self.output_layer2 = Dense(self.fc2_dims, activation="relu")
         self.q = Dense(1, activation=None)
 
@@ -59,7 +59,7 @@ class ActorNetwork(keras.Model):
 
         self.bn0 = BatchNormalization()
         self.fc1 = Dense(self.fc1_dims, activation='relu')
-        self.fc2 = Dense(self.fc1_dims, activation='relu')
+        # self.fc2 = Dense(self.fc1_dims, activation='relu')
         self.fc3 = Dense(self.fc2_dims, activation='relu')
         self.fc4 = Dense(32, activation='relu')
         self.mu = Dense(self.n_actions - 1, activation='sigmoid')
@@ -77,7 +77,7 @@ class ActorNetwork(keras.Model):
 
 
 class PowerActorNetwork(keras.Model):
-    def __init__(self, fc1_dims, fc2_dims, num_of_users, name="Actor", chkpt_dir="../tmp/ddpg"):
+    def __init__(self, fc1_dims, fc2_dims, num_of_users, name="PowerActor", chkpt_dir="../tmp/ddpg"):
         super().__init__()
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
@@ -87,10 +87,11 @@ class PowerActorNetwork(keras.Model):
             self.chkpt_dir, self.model_name + "_ddpg.h5")
 
         self.bn0 = BatchNormalization()
-        self.fc1 = Dense(128, activation='relu')
-        self.fc2 = Dense(64, activation='relu')
-        self.fc3 = Dense(16, activation='relu')
-        self.fc4 = Dense(num_of_users - 1, activation='sigmoid')
+        self.fc1 = Dense(1024, activation='relu')
+        self.fc2 = Dense(512, activation='relu')
+        self.fc3 = Dense(128, activation='relu')
+        self.fc4 = Dense(64, activation='relu')
+        self.fc5 = Dense(num_of_users - 1, activation='sigmoid')
 
     def call(self, state):
         power = self.bn0(state)
@@ -98,5 +99,5 @@ class PowerActorNetwork(keras.Model):
         power = self.fc2(power)
         power = self.fc3(power)
         power = self.fc4(power)
-        # power = tf.ones_like(power)
+        power = self.fc5(power)
         return power

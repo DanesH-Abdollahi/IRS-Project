@@ -18,8 +18,9 @@ class Agent:
         self.n_actions = n_actions
         self.noise = noise
         self.bounds = bound
+
         self.max_action = bound
-        self.min_action = 0
+        self.min_action = -bound
         self.env = env
 
         self.actor = ActorNetwork(fc1_dims=fc1, fc2_dims=fc2, bound=self.bounds,
@@ -94,8 +95,16 @@ class Agent:
             # noise = tf.concat([action_noise, power_noise], axis=0)
             actions += action_noise
             # power_action += power_noise
+        # print(actions)
+        actions = tf.clip_by_value(
+            actions[-1][:-1], self.min_action, self.max_action)
 
-        actions = tf.clip_by_value(actions, self.min_action, self.max_action)
+        # print(actions)
+
+        power_cliped = tf.clip_by_value(actions[-1], 0, self.max_action)
+
+        actions = tf.concat([actions, power_cliped], axis=0)
+
         # power_action = tf.clip_by_value(power_action, 0, 1)
         # actions = tf.concat([actions, power_action], axis=1)
 

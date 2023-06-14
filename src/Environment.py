@@ -2,6 +2,7 @@ from Functions import *
 from User import User
 from cmath import sqrt
 from math import log2, log10
+from math import prod
 
 
 class Environment:
@@ -91,11 +92,13 @@ class Environment:
 
     def Reward(self) -> float:
 
-        weighted_reward = sum(
-            self.Users[i[0]].weight*log2(1 + i[1]) for i in enumerate(self.SINR))
+        # weighted_reward = sum(
+            # self.Users[i[0]].weight*log2(1 + i[1]) for i in enumerate(self.SINR))
 
+        product_rate = prod(log2(1 + i) for i in self.SINR)
+        reward = product_rate
         # reward = self.SumRate
-        reward = weighted_reward
+        # reward = weighted_reward
         for i in enumerate(self.SINR):
             if i[1] < self.Users[i[0]].sinr_threshold:
                 reward -= self.Users[i[0]].penalty

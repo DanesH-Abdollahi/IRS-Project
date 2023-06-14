@@ -64,9 +64,9 @@ class ActorNetwork(keras.Model):
         self.fc4 = Dense(64, activation='relu')
         self.mu = Dense(self.n_actions - 1, activation='sigmoid')
         self.concat = tf.keras.layers.Concatenate()
-        self.power1 = Dense(128, activation="sigmoid")
-        self.power2 = Dense(64, activation="sigmoid")
-        self.power3 = Dense(32, activation="sigmoid")
+        self.power1 = Dense(128, activation="relu")
+        self.power2 = Dense(64, activation="relu")
+        self.power3 = Dense(32, activation="relu")
         self.power4 = Dense(1, activation="sigmoid")
 
     def call(self, state):

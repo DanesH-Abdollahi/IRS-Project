@@ -2,6 +2,7 @@ from Functions import *
 from User import User
 from cmath import sqrt
 from math import log2, log10
+from math import prod
 
 
 class Environment:
@@ -94,8 +95,12 @@ class Environment:
         weighted_reward = sum(
             self.Users[i[0]].weight*log2(1 + i[1]) for i in enumerate(self.SINR))
 
-        # reward = self.SumRate
-        reward = weighted_reward
+        # # reward = self.SumRate
+        # reward = weighted_reward
+
+        product_rate = prod(log2(1 + i) for i in self.SINR)
+        reward = product_rate * weighted_reward
+
         for i in enumerate(self.SINR):
             if i[1] < self.Users[i[0]].sinr_threshold:
                 reward -= self.Users[i[0]].penalty
@@ -135,8 +140,8 @@ class Environment:
                 action[self.M1 + self.M2 + (u[0] * self.N): self.M1 + self.M2+(u[0] * self.N) + self.N])
             u[1].w = (u[1].w).reshape(self.N, 1)
 
-            u[1].w = (u[1].w / sqrt(self.N)) * \
-                self.transmitted_power * (action[-2 + u[0]])
+            u[1].w = (u[1].w / np.linalg.norm(u[1].w)) * \
+                sqrt(self.transmitted_power * (action[-2 + u[0]]))
 
             # self.W[:, u[0]] = u[1].w[:, 0]
 

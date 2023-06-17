@@ -63,15 +63,15 @@ class ActorNetwork(keras.Model):
         self.fc3 = Dense(self.fc2_dims, activation='relu')
         self.fc4 = Dense(64, activation='relu')
         self.mu = Dense(self.n_actions - 1, activation='sigmoid')
-        self.concat = tf.keras.layers.Concatenate()
-        self.power1 = Dense(128, activation="sigmoid")
-        self.power2 = Dense(64, activation="sigmoid")
-        self.power3 = Dense(32, activation="sigmoid")
-        self.power4 = Dense(1, activation="sigmoid")
+        # self.concat = tf.keras.layers.Concatenate()
+        # self.power1 = Dense(128, activation="sigmoid")
+        # self.power2 = Dense(64, activation="sigmoid")
+        # self.power3 = Dense(32, activation="sigmoid")
+        # self.power4 = Dense(1, activation="sigmoid")
 
     def call(self, state):
         prob = self.bn0(state)
-        power = self.power1(prob)
+        # power = self.power1(prob)
 
         prob = self.fc1(prob)
         # prob = self.fc2(prob)
@@ -79,36 +79,36 @@ class ActorNetwork(keras.Model):
         prob = self.fc4(prob)
 
         mu = self.mu(prob) * self.bound
-        power = self.power2(power)
-        power = self.power3(power)
-        power = self.power4(power)
+        # power = self.power2(power)
+        # power = self.power3(power)
+        # power = self.power4(power)
 
-        out = self.concat([mu, power])
-        return out
+        # out = self.concat([mu, power])
+        return mu
 
 
-# class PowerActorNetwork(keras.Model):
-#     def __init__(self, fc1_dims, fc2_dims, num_of_users, name="PowerActor", chkpt_dir="../tmp/ddpg"):
-#         super().__init__()
-#         self.fc1_dims = fc1_dims
-#         self.fc2_dims = fc2_dims
-#         self.model_name = name
-#         self.chkpt_dir = chkpt_dir
-#         self.checkpoint_file = os.path.join(
-#             self.chkpt_dir, self.model_name + "_ddpg.h5")
+class PowerActorNetwork(keras.Model):
+    def __init__(self, fc1_dims, fc2_dims, num_of_users, name="PowerActor", chkpt_dir="../tmp/ddpg"):
+        super().__init__()
+        self.fc1_dims = fc1_dims
+        self.fc2_dims = fc2_dims
+        self.model_name = name
+        self.chkpt_dir = chkpt_dir
+        self.checkpoint_file = os.path.join(
+            self.chkpt_dir, self.model_name + "_ddpg.h5")
 
-#         self.bn0 = BatchNormalization()
-#         self.fc1 = Dense(1024, activation='relu')
-#         self.fc2 = Dense(512, activation='relu')
-#         self.fc3 = Dense(128, activation='relu')
-#         self.fc4 = Dense(64, activation='relu')
-#         self.fc5 = Dense(num_of_users - 1, activation='sigmoid')
+        self.bn0 = BatchNormalization()
+        # self.fc1 = Dense(1024, activation='relu')
+        # self.fc2 = Dense(512, activation='relu')
+        self.fc3 = Dense(128, activation='relu')
+        self.fc4 = Dense(64, activation='relu')
+        self.fc5 = Dense(num_of_users - 1, activation='sigmoid')
 
-#     def call(self, state):
-#         power = self.bn0(state)
-#         power = self.fc1(power)
-#         power = self.fc2(power)
-#         power = self.fc3(power)
-#         power = self.fc4(power)
-#         power = self.fc5(power)
-#         return power
+    def call(self, state):
+        power = self.bn0(state)
+        # power = self.fc1(power)
+        # power = self.fc2(power)
+        power = self.fc3(power)
+        power = self.fc4(power)
+        power = self.fc5(power)
+        return power

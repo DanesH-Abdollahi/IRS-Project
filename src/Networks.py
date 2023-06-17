@@ -101,7 +101,7 @@ class PowerActorNetwork(keras.Model):
         # self.fc1 = Dense(1024, activation='relu')
         # self.fc2 = Dense(512, activation='relu')
         self.fc3 = Dense(128, activation='relu')
-        self.fc4 = Dense(64, activation='relu')
+        # self.fc4 = Dense(64, activation='relu')
         self.fc5 = Dense(num_of_users - 1, activation='sigmoid')
 
     def call(self, state):
@@ -109,6 +109,6 @@ class PowerActorNetwork(keras.Model):
         # power = self.fc1(power)
         # power = self.fc2(power)
         power = self.fc3(power)
-        power = self.fc4(power)
+        # power = self.fc4(power)
         power = self.fc5(power)
         return power

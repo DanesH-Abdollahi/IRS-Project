@@ -23,6 +23,8 @@ class Environment:
         self.SINR = []
         self.SumRate = 0
         self.num_of_users = 0
+        # self.power_split_factor = 0.5
+        # self.power_factors = [0.5, 0.5]
 
         # Generate Random Channel Coefficient Matrix(es)
         self.Hs1 = Random_Complex_Mat(self.M1, self.N) / self.irs1_to_antenna
@@ -100,6 +102,7 @@ class Environment:
 
         product_rate = prod(log2(1 + i) for i in self.SINR)
         reward = product_rate * weighted_reward
+        # reward = product_rate
 
         for i in enumerate(self.SINR):
             if i[1] < self.Users[i[0]].sinr_threshold:
@@ -123,8 +126,10 @@ class Environment:
         self.Psi1 = np.diag(Random_Complex_Mat(1, self.M1)[0])
         self.Psi2 = np.diag(Random_Complex_Mat(1, self.M2)[0])
         for i in enumerate(self.Users):
-            i[1].w = (Random_Complex_Mat(self.N, 1) /
-                      sqrt(self.N)) * i[1].allocated_power
+            i[1].w = Random_Complex_Mat(self.N, 1)
+            i[1].w = i[1].w / np.linalg.norm(i[1].w)
+            i[1].w = i[1].w * \
+                sqrt(self.transmitted_power * i[1].allocated_power)
 
         return self.State()
 
@@ -140,10 +145,11 @@ class Environment:
                 action[self.M1 + self.M2 + (u[0] * self.N): self.M1 + self.M2+(u[0] * self.N) + self.N])
             u[1].w = (u[1].w).reshape(self.N, 1)
 
-            u[1].w = (u[1].w / np.linalg.norm(u[1].w)) * \
-                sqrt(self.transmitted_power * (action[-2 + u[0]]))
+            u[1].allocated_power = action[-2 + u[0]]
 
-            # self.W[:, u[0]] = u[1].w[:, 0]
+            u[1].w = (u[1].w / np.linalg.norm(u[1].w))
+            u[1].w = u[1].w * \
+                sqrt(self.transmitted_power * u[1].allocated_power)
 
         new_state = self.State()
         reward = self.Reward()

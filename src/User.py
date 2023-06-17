@@ -16,7 +16,7 @@ class User:
         self.los_to_irs1 = los_to_irs1         # Line of sight to IRS1
         self.los_to_irs2 = los_to_irs2         # Line of sight to IRS2
         self.penalty = penalty                 # Penalty for not meeting SINR threshold
-        self.allocated_power = allocated_power # Power allocated to user
+        self.allocated_power = allocated_power  # Power allocated to user
         self.sinr_threshold = sinr_threshold   # dB
         self.weight = weight                   # Weight of user
 
@@ -48,3 +48,5 @@ class User:
         #           sqrt(env.N)) * self.allocated_power
 
         self.w = Random_Complex_Mat(env.N, 1)
+        self.w = self.w / np.linalg.norm(self.w)
+        self.w = self.w * sqrt(env.transmitted_power * self.allocated_power)

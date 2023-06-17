@@ -41,9 +41,10 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
             moving_average[i] = np.mean(sumrate[i - window_size + 1:i + 1])
 
     plt.plot(range(1, len(moving_average) + 1), moving_average,
-             linewidth=1.3, label='Moving Average 100')
+             linewidth=1.3, label=f'MA 100, {moving_average[-1] : < .3}')
     # plt.axhline(y=sumrate.mean(), xmin=0, xmax=1, color='r', label='Mean')
-    plt.axhline(y=sumrate.max(), xmin=0, xmax=1, color='k', label='Max')
+    plt.axhline(y=sumrate.max(), xmin=0, xmax=1,
+                color='k', label=f'Max = {sumrate.max() : < .3}')
     plt.legend(bbox_to_anchor=(1.0, 1), loc='best')
     # plt.savefig('../tmp_results/Sumrate.png')
     plt.savefig('../../Sumrate.png', bbox_inches='tight')
@@ -67,10 +68,11 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
             moving_average[i] = np.mean(u1_sinr[i - window_size + 1:i + 1])
 
     plt.plot(range(1, len(moving_average) + 1), moving_average,
-             linewidth=1.3, label='Moving Average 100')
+             linewidth=1.3, label=f'MA 100 , {moving_average[-1] : < .3}')
 
     # plt.axhline(y=u1_sinr.mean(), xmin=0, xmax=1, color='r', label='Mean')
-    plt.axhline(y=u1_sinr.max(), xmin=0, xmax=1, color='k', label='Max')
+    plt.axhline(y=u1_sinr.max(), xmin=0, xmax=1, color='k',
+                label=f'Max = {u1_sinr.max() : < .3}')
     plt.legend(bbox_to_anchor=(1.0, 1), loc='best')
     # plt.savefig('../tmp_results/U1_SINR.png')
     plt.savefig('../../U1_SINR.png', bbox_inches='tight')
@@ -95,8 +97,10 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
 
         # plt.axhline(y=u2_sinr.mean(), xmin=0, xmax=1, color='r', label='Mean')
         plt.plot(range(1, len(moving_average) + 1),
-                 moving_average, linewidth=1.3, label='Moving Average 100')
-        plt.axhline(y=u2_sinr.max(), xmin=0, xmax=1, color='k', label='Max')
+                 moving_average, linewidth=1.3, label=f'MA 100 , {moving_average[-1] : < .3}')
+        plt.axhline(y=u2_sinr.max(), xmin=0, xmax=1, color='k',
+                    label=f'Max = {u2_sinr.max(): < .3}')
+
         plt.legend(bbox_to_anchor=(1.0, 1), loc='best')
         # plt.savefig('../tmp_results/U2_SINR.png')
         plt.savefig('../../U2_SINR.png', bbox_inches='tight')

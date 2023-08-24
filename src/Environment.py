@@ -97,7 +97,7 @@ class Environment:
         weighted_reward = sum(
             self.Users[i[0]].weight*log2(1 + i[1]) for i in enumerate(self.SINR))
 
-        # # reward = self.SumRate
+        # reward = self.SumRate
         # reward = weighted_reward
 
         product_rate = prod(log2(1 + i) for i in self.SINR)

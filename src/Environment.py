@@ -135,6 +135,7 @@ class Environment:
 
     def Step(self, action):
         action = np.array(action)
+        # print(action)
         self.Psi1 = np.diag(RealToPhase(action[0: self.M1]))
         self.Psi2 = np.diag(RealToPhase(action[self.M1: self.M1 + self.M2]))
 

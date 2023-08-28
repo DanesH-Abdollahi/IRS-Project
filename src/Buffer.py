@@ -1,26 +1,41 @@
 import numpy as np
-import tensorflow as tf
 
 
 class Buffer:
-    def __init__(self, num_states, num_actions, buffer_capacity=1000000, batch_size=64):
-        self.buffer_capacity = buffer_capacity
+    def __init__(self, batch_size=64):
+        self.states = []
+        self.probs = []
+        self.vals = []
+        self.actions = []
+        self.rewards = []
+        self.dones = []
+
         self.batch_size = batch_size
-        self.buffer_counter = 0
 
-        self.state_buffer = np.zeros((self.buffer_capacity, num_states))
-        self.action_buffer = np.zeros((self.buffer_capacity, num_actions))
-        self.reward_buffer = np.zeros((self.buffer_capacity, 1))
-        self.next_state_buffer = np.zeros((self.buffer_capacity, num_states))
+    def generate_batches(self):
+        # Randomly sample batch_size examples
+        n_states = len(self.states)
+        batch_start = np.arange(0, n_states, self.batch_size)
+        indices = np.arange(n_states, dtype=np.int64)
+        np.random.shuffle(indices)
+        batches = [indices[i:i+self.batch_size] for i in batch_start]
 
-    def record(self, obs_tuple):
-        index = self.buffer_counter % self.buffer_capacity
+        return np.array(self.states), np.array(self.actions),\
+            np.array(self.probs), np.array(self.vals), np.array(self.rewards),\
+            np.array(self.dones), batches
 
-        self.state_buffer[index] = obs_tuple[0]
-        self.action_buffer[index] = obs_tuple[1]
-        self.reward_buffer[index] = obs_tuple[2]
-        self.next_state_buffer[index] = obs_tuple[3]
+    def store_memory(self, state, action, probs, vals, reward, done):
+        self.states.append(state)
+        self.actions.append(action)
+        self.probs.append(probs)
+        self.vals.append(vals)
+        self.rewards.append(reward)
+        self.dones.append(done)
 
-        self.buffer_counter += 1
-
-    
+    def clear_memory(self):
+        self.states = []
+        self.actions = []
+        self.probs = []
+        self.vals = []
+        self.rewards = []
+        self.dones = []

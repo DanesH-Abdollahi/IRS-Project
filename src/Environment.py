@@ -134,7 +134,11 @@ class Environment:
         return self.State()
 
     def Step(self, action):
+        # print(action)
         action = np.array(action)
+        # # action = np.squeeze(action)
+        # print("-------------------------------------------------------")
+        # print(action)
         self.Psi1 = np.diag(RealToPhase(action[0: self.M1]))
         self.Psi2 = np.diag(RealToPhase(action[self.M1: self.M1 + self.M2]))
 

@@ -1,169 +1,130 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
+import tensorflow_probability as tfp
 from Buffer import Buffer
-from Networks import ActorNetwork, CriticNetwork, PowerActorNetwork
+from Networks import ActorNetwork, CriticNetwork
 
 
 class Agent:
-    def __init__(self, num_states, n_actions, bound, alpha=0.001, beta=0.002,
-                 env=None, gamma=0.99, max_size=100000, tau=0.005,
-                 fc1=512, fc2=256, batch_size=256, noise=0.055):
+    def __init__(self, n_actions, alpha=0.0003,
+                 gamma=0.99, gae_lambda=0.95, policy_clip=0.2,
+                 batch_size=64, n_epochs=10):
+
         self.gamma = gamma
-        self.tau = tau
-        self.memory = Buffer(num_states, n_actions,
-                             buffer_capacity=max_size, batch_size=batch_size)
-        self.batch_size = batch_size
+        self.policy_clip = policy_clip
+        self.n_epochs = n_epochs
+        self.gae_lambda = gae_lambda
         self.n_actions = n_actions
-        self.noise = noise
-        self.bounds = bound
-        self.max_action = bound
-        self.min_action = -bound
-        self.env = env
 
-        self.power_noise = 0
-
-        self.actor = ActorNetwork(fc1_dims=fc1, fc2_dims=fc2, bound=self.bounds,
-                                  n_actions=self.n_actions, name='Actor')
-
-        self.target_actor = ActorNetwork(fc1_dims=fc1, fc2_dims=fc2, bound=self.bounds,
-                                         n_actions=self.n_actions, name='TargetActor')
-
-        self.critic = CriticNetwork(fc1_dims=fc1, fc2_dims=fc2, name='Critic')
-
-        self.target_critic = CriticNetwork(
-            fc1_dims=fc1, fc2_dims=fc2, name='TargetCritic')
-
-        self.power = PowerActorNetwork(
-            fc1_dims=128, fc2_dims=32, num_of_users=env.num_of_users, name='PowerActor')
-        self.target_power = PowerActorNetwork(
-            fc1_dims=128, fc2_dims=32, num_of_users=env.num_of_users, name='TargetPower')
-
+        self.actor = ActorNetwork(n_actions=n_actions)
+        self.critic = CriticNetwork()
         self.actor.compile(optimizer=Adam(learning_rate=alpha))
-        self.critic.compile(optimizer=Adam(learning_rate=beta))
-        self.target_actor.compile(optimizer=Adam(learning_rate=alpha))
-        self.target_critic.compile(optimizer=Adam(learning_rate=beta))
+        self.critic.compile(optimizer=Adam(learning_rate=alpha))
 
-        self.power.compile(optimizer=Adam(learning_rate=alpha/2))
-        self.target_power.compile(optimizer=Adam(learning_rate=beta/2))
+        self.memory = Buffer(batch_size)
 
-        self.update_network_parameters(tau=1)  # Hard update
-
-    @tf.function
-    def update_network_parameters(self, tau=None):
-        if tau is None:
-            tau = self.tau
-        for (a, b) in zip(self.target_actor.weights, self.actor.weights):
-            a.assign(b * tau + a * (1 - tau))
-
-        for (a, b) in zip(self.target_critic.weights, self.critic.weights):
-            a.assign(b * tau + a * (1 - tau))
-
-        for (a, b) in zip(self.target_power.weights, self.power.weights):
-            a.assign(b * tau + a * (1 - tau))
-
-    def remember(self, state, action, reward, new_state):
-        self.memory.record((state, action, reward, new_state))
-
-    def save_models(self):
-        print('... saving models ...')
-        self.actor.save_weights(self.actor.checkpoint_file)
-        self.critic.save_weights(self.critic.checkpoint_file)
-        self.target_actor.save_weights(self.target_actor.checkpoint_file)
-        self.target_critic.save_weights(self.target_critic.checkpoint_file)
-
-    def load_models(self):
-        print('... loading models ...')
-        self.actor.load_weights(self.actor.checkpoint_file)
-        self.critic.load_weights(self.critic.checkpoint_file)
-        self.target_actor.load_weights(self.target_actor.checkpoint_file)
-        self.target_critic.load_weights(self.target_critic.checkpoint_file)
+    def remember(self, state, action, probs, vals, reward, done):
+        self.memory.store_memory(state, action, probs, vals, reward, done)
 
     def choose_action(self, observation, evaluate=False):
-        state = tf.convert_to_tensor([observation], dtype=tf.float32)
-        actions = self.actor(state)
-        power_action = self.power(state)
+        state = tf.convert_to_tensor([observation])
+        # state = observation
+        probs = self.actor(state)
+        probs = probs.numpy()
 
-        if not evaluate:
-            action_noise = tf.random.normal(shape=[self.n_actions-1], mean=0,
-                                            stddev=self.noise)
-            actions += action_noise
+        # print(probs)
 
-            self.power_noise = tf.random.normal(shape=[self.env.num_of_users-1], mean=0,
-                                                stddev=self.noise/2)
-            power_action += self.power_noise
+        # print(f"n actions: {self.n_actions}")
+        dist = tfp.distributions.Normal(probs, 1.0)
+        # dist = tfp.distributions.Categorical(probs=probs, dtype=tf.float32)
+        action = dist.sample()
 
-            # noise = tf.concat([action_noise, power_noise], axis=0)
-            # actions += action_noise
+        log_probs = dist.log_prob(action)
+        value = self.critic(state)
 
-        actions = tf.clip_by_value(actions, self.min_action, self.max_action)
-        power_action = tf.clip_by_value(power_action, 0, 1)
-        actions = tf.concat([actions, power_action], axis=1)
+        action = action.numpy()[0]
+        value = value.numpy()[0]
+        log_probs = log_probs.numpy()[0]
 
-        return actions[0]
-
-    @tf.function
-    def update(self, state_batch, action_batch, reward_batch, next_state_batch):
-        with tf.GradientTape() as tape:
-            target_actions = self.target_actor(next_state_batch)
-            target_power_action = self.target_power(next_state_batch)
-            target_actions = tf.concat(
-                [target_actions, target_power_action], axis=1)
-
-            y = reward_batch + self.gamma * \
-                self.target_critic(next_state_batch, target_actions)
-            critic_value = self.critic(state_batch, action_batch)
-            critic_loss = tf.math.reduce_mean(tf.math.square(y - critic_value))
-
-        critic_grad = tape.gradient(
-            critic_loss, self.critic.trainable_variables)
-        self.critic.optimizer.apply_gradients(
-            zip(critic_grad, self.critic.trainable_variables))
-
-        with tf.GradientTape() as tape:
-            actions = self.actor(state_batch)
-            power_action = self.power(state_batch)
-            actions = tf.concat([actions, power_action], axis=1)
-
-            critic_value = self.critic(state_batch, actions)
-            actor_loss = -tf.math.reduce_mean(critic_value)
-
-        actor_grad = tape.gradient(
-            actor_loss, self.actor.trainable_variables)
-
-        self.actor.optimizer.apply_gradients(
-            zip(actor_grad, self.actor.trainable_variables))
-
-        with tf.GradientTape() as tape:
-            actions = self.actor(state_batch)
-            power_action = self.power(state_batch)
-            actions = tf.concat([actions, power_action], axis=1)
-
-            actor_loss = - \
-                tf.math.reduce_mean(self.critic(state_batch, actions))
-
-        power_grad = tape.gradient(
-            actor_loss, self.power.trainable_variables)
-        self.power.optimizer.apply_gradients(
-            zip(power_grad, self.power.trainable_variables))
+        return action, log_probs, value
 
     def learn(self):
-        if self.memory.buffer_counter < self.batch_size:
-            return
+        for _ in range(self.n_epochs):
+            state_arr, action_arr, old_prob_arr, vals_arr, reward_arr, dones_arr, batches = \
+                self.memory.generate_batches()
 
-        record_range = min(self.memory.buffer_counter,
-                           self.memory.buffer_capacity)
-        batch_indices = np.random.choice(record_range, self.batch_size)
+            values = vals_arr
+            advantage = np.zeros(len(reward_arr), dtype=np.float32)
 
-        state_batch = tf.convert_to_tensor(
-            self.memory.state_buffer[batch_indices])
-        action_batch = tf.convert_to_tensor(
-            self.memory.action_buffer[batch_indices])
-        reward_batch = tf.convert_to_tensor(
-            self.memory.reward_buffer[batch_indices])
-        reward_batch = tf.cast(reward_batch, dtype=tf.float32)
-        next_state_batch = tf.convert_to_tensor(
-            self.memory.next_state_buffer[batch_indices])
+            for t in range(len(reward_arr) - 1):
+                discount = 1
+                a_t = 0
+                for k in range(t, len(reward_arr) - 1):
+                    a_t += discount * \
+                        (reward_arr[k] + self.gamma * values[k + 1]
+                         * (1 - int(dones_arr[k])) - values[k])
+                    discount *= self.gamma * self.gae_lambda
+                advantage[t] = a_t
 
-        self.update(state_batch, action_batch, reward_batch, next_state_batch)
-        self.update_network_parameters()
+            for batch in batches:
+                with tf.GradientTape(persistent=True) as tape:
+                    states = tf.convert_to_tensor(state_arr[batch])
+                    actions = tf.convert_to_tensor(action_arr[batch])
+                    old_probs = tf.convert_to_tensor(old_prob_arr[batch])
+
+                    dist = tfp.distributions.Normal(self.actor(states), 1.0)
+                    new_probs = dist.log_prob(actions)
+
+                    critic_value = self.critic(states)
+                    critic_value = tf.squeeze(critic_value)
+
+                    prob_ratio = tf.math.exp(new_probs - old_probs)
+
+                    # print(len(advantage[batch]))
+                    weighted_probs = np.zeros(
+                        (len(advantage[batch]), self.n_actions))
+
+                    for i in range(len(advantage[batch])):
+                        weighted_probs[i:] = advantage[batch][i] * \
+                            prob_ratio[i].numpy()
+
+                    # weighted_probs = advantage[batch] * prob_ratio.numpy()
+                    weighted_probs = tf.convert_to_tensor(weighted_probs)
+
+                    clipped_probs = tf.clip_by_value(prob_ratio, 1 - self.policy_clip,
+                                                     1 + self.policy_clip)
+
+                    weighted_clipped_probs = np.zeros(
+                        (len(advantage[batch]), self.n_actions))
+
+                    for i in range(len(advantage[batch])):
+                        weighted_clipped_probs[i:] = advantage[batch][i] * \
+                            clipped_probs[i].numpy()
+
+                    weighted_clipped_probs = tf.convert_to_tensor(
+                        weighted_clipped_probs)
+
+                    # weighted_clipped_probs = clipped_probs * advantage[batch]
+
+                    actor_loss = - \
+                        tf.math.reduce_mean(tf.math.minimum(
+                            weighted_probs, weighted_clipped_probs))
+
+                    returns = advantage[batch] + values[batch]
+
+                    critic_loss = tf.math.reduce_mean(
+                        (returns - critic_value) ** 2)
+
+                actor_prams = self.actor.trainable_variables
+                critic_params = self.critic.trainable_variables
+
+                actor_grads = tape.gradient(actor_loss, actor_prams)
+                critic_grads = tape.gradient(critic_loss, critic_params)
+
+                self.actor.optimizer.apply_gradients(
+                    zip(actor_grads, actor_prams))
+                self.critic.optimizer.apply_gradients(
+                    zip(critic_grads, critic_params))
+
+        self.memory.clear_memory()

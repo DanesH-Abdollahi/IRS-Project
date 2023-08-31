@@ -54,7 +54,7 @@ class ActorNetwork(keras.Model):
 
 
 class PowerActorNetwork(keras.Model):
-    def __init__(self, fc1_dims, fc2_dims, num_of_users, name="PowerActor", chkpt_dir="../tmp/ddpg"):
+    def __init__(self, fc1_dims, fc2_dims, num_of_users, name="PowerActor", chkpt_dir="../tmp/td3"):
         super().__init__()
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
@@ -63,12 +63,11 @@ class PowerActorNetwork(keras.Model):
         self.checkpoint_file = os.path.join(
             self.chkpt_dir, self.model_name + "_td3")
 
-
         self.fc1 = Dense(128, activation='relu')
         self.fc2 = Dense(num_of_users - 1, activation='tanh')
 
     def call(self, state):
         power = self.fc1(state)
         power = self.fc2(power)
-        
+
         return power

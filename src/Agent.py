@@ -9,11 +9,12 @@ from tensorflow import keras
 class Agent:
     def __init__(self, num_states, n_actions, bound, alpha=0.001, beta=0.002,
                  env=None, gamma=0.99, max_size=100000, tau=0.005,
-                 fc1=512, fc2=256, batch_size=128, noise=0.055, warmup=1000,
+                 fc1=512, fc2=256, batch_size=128, noise=0.055, warmup=200,
                  interval_update=2):
 
         self.gamma = gamma
         self.tau = tau
+        self.num_states = num_states
         self.memory = Buffer(num_states, n_actions,
                              buffer_capacity=max_size, batch_size=batch_size)
         self.batch_size = batch_size
@@ -52,24 +53,24 @@ class Agent:
         self.target_power = PowerActorNetwork(
             fc1_dims=128, fc2_dims=32, num_of_users=env.num_of_users, name='TargetPower')
 
-        self.actor.compile(optimizer=Adam(learning_rate=alpha), loss="mean")
+        self.actor.compile(optimizer=Adam(learning_rate=alpha))
         self.critic_1.compile(optimizer=Adam(
-            learning_rate=beta), loss="mean squared error")
+            learning_rate=beta))
         self.critic_2.compile(optimizer=Adam(
-            learning_rate=beta), loss="mean squared error")
+            learning_rate=beta))
         self.target_actor.compile(optimizer=Adam(
-            learning_rate=alpha), loss="mean")
+            learning_rate=alpha))
         self.target_critic_1.compile(optimizer=Adam(
-            learning_rate=beta), loss="mean squared error")
+            learning_rate=beta))
         self.target_critic_2.compile(optimizer=Adam(
-            learning_rate=beta), loss="mean squared error")
+            learning_rate=beta))
 
         self.power.compile(optimizer=Adam(learning_rate=alpha))
         self.target_power.compile(optimizer=Adam(learning_rate=beta))
 
         self.update_network_parameters(tau=1)  # Hard update
 
-    @tf.function
+    # @tf.function
     def update_network_parameters(self, tau=None):
         if tau is None:
             tau = self.tau
@@ -113,33 +114,44 @@ class Agent:
             power_action = np.clip(power_action, 0, 1)
             actions = np.concatenate([actions, power_action], axis=0)
 
-            actions = np.float32(actions)
-
+            # actions = np.float32(actions)
+            self.time_step += 1
             return actions
 
         else:
-            state = tf.convert_to_tensor([observation], dtype=tf.float32)
+            state = tf.convert_to_tensor([observation])
             actions = self.actor(state)
             power_action = self.power(state)
 
-        action_noise = tf.random.normal(shape=[self.n_actions-1], mean=0,
-                                        stddev=self.noise)
-        actions += action_noise
+            action_noise = tf.random.normal(shape=[self.n_actions-1], mean=0,
+                                            stddev=self.noise)
+            actions += action_noise
 
-        self.power_noise = tf.random.normal(shape=[self.env.num_of_users-1], mean=0,
-                                            stddev=self.noise/2)
+            self.power_noise = tf.random.normal(shape=[self.env.num_of_users-1], mean=0,
+                                                stddev=self.noise/2)
 
-        self.power_noise = tf.clip_by_value(self.power_noise, -0.4, 0.4)
-        power_action += self.power_noise
+            self.power_noise = tf.clip_by_value(self.power_noise, -0.4, 0.4)
+            power_action += self.power_noise
 
-        actions = tf.clip_by_value(actions, self.min_action, self.max_action)
-        power_action = tf.clip_by_value(power_action, 0, 1)
-        actions = tf.concat([actions, power_action], axis=1)
+            actions = tf.clip_by_value(
+                actions, self.min_action, self.max_action)
+            power_action = tf.clip_by_value(power_action, 0, 1)
+            actions = tf.concat([actions, power_action], axis=1)
+            self.time_step += 1
 
         return actions[0]
 
-    @tf.function
+    # @tf.function
     def update(self, state_batch, action_batch, reward_batch, next_state_batch):
+
+        # if self.learn_step_counter == 0:
+        #     self.actor.build(input_shape=self.num_states)
+        #     self.target_actor.build(input_shape=self.num_states)
+        #     self.critic_1.build(input_shape=self.num_states + self.n_actions)
+        #     self.target_critic_1
+        #     self.critic_2.build(input_shape=self.num_states + self.n_actions)
+        #     self.power.build(input_shape=self.num_states)
+
         with tf.GradientTape(persistent=True) as tape:
             target_actions = self.target_actor(next_state_batch) + tf.clip_by_value(
                 tf.random.normal(shape=[self.n_actions-1], mean=0, stddev=0.2), -0.5, 0.5)
@@ -180,6 +192,7 @@ class Agent:
 
         self.critic_1.optimizer.apply_gradients(
             zip(critic_1_grad, self.critic_1.trainable_variables))
+
         self.critic_2.optimizer.apply_gradients(
             zip(critic_2_grad, self.critic_2.trainable_variables))
 

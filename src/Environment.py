@@ -6,10 +6,18 @@ from math import prod
 
 
 class Environment:
-    def __init__(self, *, num_of_antennas: int, num_of_irs1: int, num_of_irs2: int,
-                 path_loss_exponent: float, irs1_to_antenna: float,
-                 irs2_to_antenna: float, irs1_to_irs2: float, transmitted_power: float) -> None:
-
+    def __init__(
+        self,
+        *,
+        num_of_antennas: int,
+        num_of_irs1: int,
+        num_of_irs2: int,
+        path_loss_exponent: float,
+        irs1_to_antenna: float,
+        irs2_to_antenna: float,
+        irs1_to_irs2: float,
+        transmitted_power: float
+    ) -> None:
         self.N = num_of_antennas  # Number of Antennas
         self.M1 = num_of_irs1  # Number of Elements of IRS1
         self.M2 = num_of_irs2  # Number of Elements of IRS2
@@ -37,14 +45,34 @@ class Environment:
         self.Psi2 = np.diag(Random_Complex_Mat(1, self.M2)[0])
         # self.W = np.zeros((self.N, 2), dtype=complex)
 
-    def CreateUser(self, *, distance_to_antenna: float, distance_to_irs1: float,
-                   distance_to_irs2: float, noise_var: float, los_to_antenna: bool,
-                   los_to_irs1: bool, los_to_irs2: bool, sinr_threshold: float,
-                   penalty: float, allocated_power: float, weight: float):
-
-        Usr = User(distance_to_antenna, distance_to_irs1, distance_to_irs2,
-                   noise_var, los_to_antenna, los_to_irs1, los_to_irs2,
-                   sinr_threshold, penalty, allocated_power, weight)
+    def CreateUser(
+        self,
+        *,
+        distance_to_antenna: float,
+        distance_to_irs1: float,
+        distance_to_irs2: float,
+        noise_var: float,
+        los_to_antenna: bool,
+        los_to_irs1: bool,
+        los_to_irs2: bool,
+        sinr_threshold: float,
+        penalty: float,
+        allocated_power: float,
+        weight: float
+    ):
+        Usr = User(
+            distance_to_antenna,
+            distance_to_irs1,
+            distance_to_irs2,
+            noise_var,
+            los_to_antenna,
+            los_to_irs1,
+            los_to_irs2,
+            sinr_threshold,
+            penalty,
+            allocated_power,
+            weight,
+        )
 
         Usr.GenerateMatrixes(self)
         self.Users.append(Usr)
@@ -56,35 +84,40 @@ class Environment:
     def CalculateSINR(self):
         SINR = []
         for i in enumerate(self.Users):
-            numerator = np.abs(
-                (
-                    i[1].hsu
-                    + (i[1].h1u @ self.Psi1) @ self.Hs1
-                    + (i[1].h2u @ self.Psi2) @ self.Hs2
-                    # + (i[1].h2u @ self.Psi2) @ self.Hs2
-                    + ((i[1].h1u @ self.Psi1) @
-                       self.H21) @ (self.Psi2 @ self.Hs2)
-                    + ((i[1].h2u @ self.Psi2) @
-                           self.H12) @ (self.Psi1 @ self.Hs1)
-                ) @ i[1].w
-            ) ** 2
+            numerator = (
+                np.abs(
+                    (
+                        i[1].hsu
+                        + (i[1].h1u @ self.Psi1) @ self.Hs1
+                        + (i[1].h2u @ self.Psi2) @ self.Hs2
+                        # + (i[1].h2u @ self.Psi2) @ self.Hs2
+                        + ((i[1].h1u @ self.Psi1) @ self.H21) @ (self.Psi2 @ self.Hs2)
+                        + ((i[1].h2u @ self.Psi2) @ self.H12) @ (self.Psi1 @ self.Hs1)
+                    )
+                    @ i[1].w
+                )
+                ** 2
+            )
 
             denominator = i[1].noise_power
             for j in enumerate(self.Users):
                 if j[0] != i[0]:
-                    denominator += np.abs(
-                        (
-                            i[1].hsu
-                            + (i[1].h1u @ self.Psi1) @ self.Hs1
-                            + (i[1].h2u @ self.Psi2) @ self.Hs2
-                            # + (j[1].h2u @ self.Psi2) @ self.Hs2
-                            + ((i[1].h1u @ self.Psi1) @
-                               self.H21) @ (self.Psi2 @ self.Hs2)
-                            + ((i[1].h2u @ self.Psi2) @
-                               self.H12) @ (self.Psi1 @ self.Hs1)
-                        ) @ j[1].w
-
-                    ) ** 2
+                    denominator += (
+                        np.abs(
+                            (
+                                i[1].hsu
+                                + (i[1].h1u @ self.Psi1) @ self.Hs1
+                                + (i[1].h2u @ self.Psi2) @ self.Hs2
+                                # + (j[1].h2u @ self.Psi2) @ self.Hs2
+                                + ((i[1].h1u @ self.Psi1) @ self.H21)
+                                @ (self.Psi2 @ self.Hs2)
+                                + ((i[1].h2u @ self.Psi2) @ self.H12)
+                                @ (self.Psi1 @ self.Hs1)
+                            )
+                            @ j[1].w
+                        )
+                        ** 2
+                    )
 
             SINR.append((numerator / denominator)[0, 0])
 
@@ -93,16 +126,15 @@ class Environment:
         self.SumRate = sum(log2(1 + ii) for ii in SINR)
 
     def Reward(self) -> float:
-
         weighted_reward = sum(
-            self.Users[i[0]].weight*log2(1 + i[1]) for i in enumerate(self.SINR))
+            self.Users[i[0]].weight * log2(1 + i[1]) for i in enumerate(self.SINR)
+        )
 
         # reward = self.SumRate
         # reward = weighted_reward
 
-        product_rate = prod(log2(1 + i) for i in self.SINR)
+        product_rate = prod(log10(1 + i) for i in self.SINR)
         reward = product_rate * weighted_reward
-        # reward = product_rate
 
         for i in enumerate(self.SINR):
             if i[1] < self.Users[i[0]].sinr_threshold:
@@ -128,28 +160,34 @@ class Environment:
         for i in enumerate(self.Users):
             i[1].w = Random_Complex_Mat(self.N, 1)
             i[1].w = i[1].w / np.linalg.norm(i[1].w)
-            i[1].w = i[1].w * \
-                sqrt(self.transmitted_power * i[1].allocated_power)
+            i[1].w = i[1].w * sqrt(self.transmitted_power * i[1].allocated_power)
 
         return self.State()
 
     def Step(self, action):
         action = np.array(action)
-        self.Psi1 = np.diag(RealToPhase(action[0: self.M1]))
-        self.Psi2 = np.diag(RealToPhase(action[self.M1: self.M1 + self.M2]))
+        self.Psi1 = np.diag(RealToPhase(action[0 : self.M1]))
+        self.Psi2 = np.diag(RealToPhase(action[self.M1 : self.M1 + self.M2]))
 
         action = np.append(action, 1 - action[-1])
 
         for u in enumerate(self.Users):
             u[1].w = RealToPhase(
-                action[self.M1 + self.M2 + (u[0] * self.N): self.M1 + self.M2+(u[0] * self.N) + self.N])
+                action[
+                    self.M1
+                    + self.M2
+                    + (u[0] * self.N) : self.M1
+                    + self.M2
+                    + (u[0] * self.N)
+                    + self.N
+                ]
+            )
             u[1].w = (u[1].w).reshape(self.N, 1)
 
             u[1].allocated_power = action[-2 + u[0]]
 
-            u[1].w = (u[1].w / np.linalg.norm(u[1].w))
-            u[1].w = u[1].w * \
-                sqrt(self.transmitted_power * u[1].allocated_power)
+            u[1].w = u[1].w / np.linalg.norm(u[1].w)
+            u[1].w = u[1].w * sqrt(self.transmitted_power * u[1].allocated_power)
 
         new_state = self.State()
         reward = self.Reward()

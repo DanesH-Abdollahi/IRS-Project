@@ -133,7 +133,7 @@ class Environment:
         # reward = self.SumRate
         # reward = weighted_reward
 
-        product_rate = prod(log10(1 + i) for i in self.SINR)
+        product_rate = prod(log2(1 + i) for i in self.SINR)
         reward = product_rate * weighted_reward
 
         for i in enumerate(self.SINR):

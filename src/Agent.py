@@ -24,6 +24,8 @@ class Agent:
         noise=0.055,
         warmup=0,
         uniform_selection=True,
+        TD3=False,
+        TD3_update_interval=2,
     ):
         self.gamma = gamma
         self.tau = tau
@@ -42,6 +44,8 @@ class Agent:
         self.step = 0
         self.warmup = warmup
         self.uniform_selection = uniform_selection
+        self.TD3 = TD3
+        self.update_interval = TD3_update_interval
 
         self.actor = ActorNetwork(
             fc1_dims=fc1,
@@ -59,11 +63,22 @@ class Agent:
             name="TargetActor",
         )
 
-        self.critic = CriticNetwork(fc1_dims=fc1, fc2_dims=fc2, name="Critic")
+        if self.TD3:
+            self.critic_1 = CriticNetwork(fc1_dims=fc1, fc2_dims=fc2, name="Critic_1")
+            self.critic_2 = CriticNetwork(fc1_dims=fc1, fc2_dims=fc2, name="Critic_2")
+            self.target_critic_1 = CriticNetwork(
+                fc1_dims=fc1, fc2_dims=fc2, name="TargetCritic_1"
+            )
+            self.target_critic_2 = CriticNetwork(
+                fc1_dims=fc1, fc2_dims=fc2, name="TargetCritic_2"
+            )
 
-        self.target_critic = CriticNetwork(
-            fc1_dims=fc1, fc2_dims=fc2, name="TargetCritic"
-        )
+        else:
+            self.critic = CriticNetwork(fc1_dims=fc1, fc2_dims=fc2, name="Critic")
+
+            self.target_critic = CriticNetwork(
+                fc1_dims=fc1, fc2_dims=fc2, name="TargetCritic"
+            )
 
         self.power = PowerActorNetwork(
             fc1_dims=128, fc2_dims=32, num_of_users=env.num_of_users, name="PowerActor"
@@ -73,9 +88,17 @@ class Agent:
         )
 
         self.actor.compile(optimizer=Adam(learning_rate=alpha))
-        self.critic.compile(optimizer=Adam(learning_rate=beta))
         self.target_actor.compile(optimizer=Adam(learning_rate=alpha))
-        self.target_critic.compile(optimizer=Adam(learning_rate=beta))
+
+        if self.TD3:
+            self.critic_1.compile(optimizer=Adam(learning_rate=beta))
+            self.critic_2.compile(optimizer=Adam(learning_rate=beta))
+            self.target_critic_1.compile(optimizer=Adam(learning_rate=beta))
+            self.target_critic_2.compile(optimizer=Adam(learning_rate=beta))
+
+        else:
+            self.critic.compile(optimizer=Adam(learning_rate=beta))
+            self.target_critic.compile(optimizer=Adam(learning_rate=beta))
 
         self.power.compile(optimizer=Adam(learning_rate=alpha / 2))
         self.target_power.compile(optimizer=Adam(learning_rate=beta / 2))
@@ -86,11 +109,25 @@ class Agent:
     def update_network_parameters(self, tau=None):
         if tau is None:
             tau = self.tau
+
+        if self.TD3:
+            if self.step % self.update_interval != 0:
+                return
+            
+            
         for a, b in zip(self.target_actor.weights, self.actor.weights):
             a.assign(b * tau + a * (1 - tau))
 
-        for a, b in zip(self.target_critic.weights, self.critic.weights):
-            a.assign(b * tau + a * (1 - tau))
+        if self.TD3:
+            for a, b in zip(self.target_critic_1.weights, self.critic_1.weights):
+                a.assign(b * tau + a * (1 - tau))
+
+            for a, b in zip(self.target_critic_2.weights, self.critic_2.weights):
+                a.assign(b * tau + a * (1 - tau))
+
+        else:
+            for a, b in zip(self.target_critic.weights, self.critic.weights):
+                a.assign(b * tau + a * (1 - tau))
 
         for a, b in zip(self.target_power.weights, self.power.weights):
             a.assign(b * tau + a * (1 - tau))
@@ -139,29 +176,98 @@ class Agent:
 
     @tf.function
     def update(self, state_batch, action_batch, reward_batch, next_state_batch):
-        with tf.GradientTape() as tape:
-            target_actions = self.target_actor(next_state_batch)
-            target_power_action = self.target_power(next_state_batch)
-            target_actions = tf.concat([target_actions, target_power_action], axis=1)
+        with tf.GradientTape(persistent=True) as tape:
+            if self.TD3:
+                target_actions = self.target_actor(next_state_batch)
+                target_power_action = self.target_power(next_state_batch)
 
-            y = reward_batch + self.gamma * self.target_critic(
-                next_state_batch, target_actions
+                target_action_noise = tf.random.normal(
+                    shape=[self.batch_size, self.n_actions - 1],
+                    mean=0,
+                    stddev=self.noise,
+                )
+
+                target_action_noise = tf.clip_by_value(target_action_noise, -0.2, 0.2)
+
+                target_actions += target_action_noise
+
+                target_power_noise = tf.random.normal(
+                    shape=[self.batch_size, self.env.num_of_users - 1],
+                    mean=0,
+                    stddev=self.noise / 2,
+                )
+                target_power_noise = tf.clip_by_value(target_power_noise, -0.1, 0.1)
+
+                target_power_action += target_power_noise
+                target_power_action = tf.clip_by_value(target_power_action, 0, 1)
+
+                target_actions = tf.concat(
+                    [target_actions, target_power_action], axis=1
+                )
+
+                target_actions = tf.clip_by_value(
+                    target_actions, self.min_action, self.max_action
+                )
+
+            else:
+                target_actions = self.target_actor(next_state_batch)
+                target_power_action = self.target_power(next_state_batch)
+                target_actions = tf.concat(
+                    [target_actions, target_power_action], axis=1
+                )
+
+            if self.TD3:
+                y = reward_batch + self.gamma * tf.math.minimum(
+                    self.target_critic_1(next_state_batch, target_actions),
+                    self.target_critic_2(next_state_batch, target_actions),
+                )
+                critic_value_1 = self.critic_1(state_batch, action_batch)
+                critic_value_2 = self.critic_2(state_batch, action_batch)
+                critic_loss_1 = tf.math.reduce_mean(tf.math.square(y - critic_value_1))
+                critic_loss_2 = tf.math.reduce_mean(tf.math.square(y - critic_value_2))
+
+            else:
+                y = reward_batch + self.gamma * self.target_critic(
+                    next_state_batch, target_actions
+                )
+                critic_value = self.critic(state_batch, action_batch)
+                critic_loss = tf.math.reduce_mean(tf.math.square(y - critic_value))
+
+        if self.TD3:
+            critic_grad_1 = tape.gradient(
+                critic_loss_1, self.critic_1.trainable_variables
             )
-            critic_value = self.critic(state_batch, action_batch)
-            critic_loss = tf.math.reduce_mean(tf.math.square(y - critic_value))
+            self.critic_1.optimizer.apply_gradients(
+                zip(critic_grad_1, self.critic_1.trainable_variables)
+            )
 
-        critic_grad = tape.gradient(critic_loss, self.critic.trainable_variables)
-        self.critic.optimizer.apply_gradients(
-            zip(critic_grad, self.critic.trainable_variables)
-        )
+            critic_grad_2 = tape.gradient(
+                critic_loss_2, self.critic_2.trainable_variables
+            )
+            self.critic_2.optimizer.apply_gradients(
+                zip(critic_grad_2, self.critic_2.trainable_variables)
+            )
+
+        else:
+            critic_grad = tape.gradient(critic_loss, self.critic.trainable_variables)
+            self.critic.optimizer.apply_gradients(
+                zip(critic_grad, self.critic.trainable_variables)
+            )
+
+        if self.TD3:
+            if self.step % self.update_interval != 0:
+                return
 
         with tf.GradientTape() as tape:
             actions = self.actor(state_batch)
             power_action = self.power(state_batch)
             actions = tf.concat([actions, power_action], axis=1)
 
-            critic_value = self.critic(state_batch, actions)
-            actor_loss = -tf.math.reduce_mean(critic_value)
+            if self.TD3:
+                actor_loss = -tf.math.reduce_mean(self.critic_1(state_batch, actions))
+            else:
+                critic_value = self.critic(state_batch, actions)
+                actor_loss = -tf.math.reduce_mean(critic_value)
 
         actor_grad = tape.gradient(actor_loss, self.actor.trainable_variables)
 
@@ -174,7 +280,10 @@ class Agent:
             power_action = self.power(state_batch)
             actions = tf.concat([actions, power_action], axis=1)
 
-            actor_loss = -tf.math.reduce_mean(self.critic(state_batch, actions))
+            if self.TD3:
+                actor_loss = -tf.math.reduce_mean(self.critic_1(state_batch, actions))
+            else:
+                actor_loss = -tf.math.reduce_mean(self.critic(state_batch, actions))
 
         power_grad = tape.gradient(actor_loss, self.power.trainable_variables)
         self.power.optimizer.apply_gradients(

@@ -26,6 +26,7 @@ class Agent:
         uniform_selection=True,
         TD3=False,
         TD3_update_interval=2,
+        last_layer_activation="sigmoid",
     ):
         self.gamma = gamma
         self.tau = tau
@@ -36,8 +37,16 @@ class Agent:
         self.n_actions = n_actions
         self.noise = noise
         self.bounds = bound
-        self.max_action = bound
-        self.min_action = -bound
+
+        if last_layer_activation == "sigmoid":
+            self.max_action = bound
+            self.min_action = 0
+
+        elif last_layer_activation == "tanh":
+            self.max_action = bound/2
+            self.min_action = -bound/2
+
+        
         self.env = env
 
         self.power_noise = 0
@@ -53,6 +62,7 @@ class Agent:
             bound=self.bounds,
             n_actions=self.n_actions,
             name="Actor",
+            last_layer_activation=last_layer_activation,
         )
 
         self.target_actor = ActorNetwork(
@@ -61,6 +71,7 @@ class Agent:
             bound=self.bounds,
             n_actions=self.n_actions,
             name="TargetActor",
+            last_layer_activation=last_layer_activation,
         )
 
         if self.TD3:
@@ -176,7 +187,7 @@ class Agent:
 
     @tf.function
     def update(self, state_batch, action_batch, reward_batch, next_state_batch):
-        with tf.GradientTape(persistent=True) as tape:
+        with tf.GradientTape() as tape, tf.GradientTape() as tape2:
             if self.TD3:
                 target_actions = self.target_actor(next_state_batch)
                 target_power_action = self.target_power(next_state_batch)
@@ -241,7 +252,7 @@ class Agent:
                 zip(critic_grad_1, self.critic_1.trainable_variables)
             )
 
-            critic_grad_2 = tape.gradient(
+            critic_grad_2 = tape2.gradient(
                 critic_loss_2, self.critic_2.trainable_variables
             )
             self.critic_2.optimizer.apply_gradients(
@@ -258,7 +269,7 @@ class Agent:
             if self.step % self.update_interval != 0:
                 return
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape() as tape, tf.GradientTape() as tape2:
             actions = self.actor(state_batch)
             power_action = self.power(state_batch)
             actions = tf.concat([actions, power_action], axis=1)
@@ -270,25 +281,29 @@ class Agent:
                 actor_loss = -tf.math.reduce_mean(critic_value)
 
         actor_grad = tape.gradient(actor_loss, self.actor.trainable_variables)
+        power_grad = tape2.gradient(actor_loss, self.power.trainable_variables)
 
         self.actor.optimizer.apply_gradients(
             zip(actor_grad, self.actor.trainable_variables)
         )
-
-        with tf.GradientTape() as tape:
-            actions = self.actor(state_batch)
-            power_action = self.power(state_batch)
-            actions = tf.concat([actions, power_action], axis=1)
-
-            if self.TD3:
-                actor_loss = -tf.math.reduce_mean(self.critic_1(state_batch, actions))
-            else:
-                actor_loss = -tf.math.reduce_mean(self.critic(state_batch, actions))
-
-        power_grad = tape.gradient(actor_loss, self.power.trainable_variables)
         self.power.optimizer.apply_gradients(
             zip(power_grad, self.power.trainable_variables)
         )
+
+        # with tf.GradientTape() as tape:
+        #     actions = self.actor(state_batch)
+        #     power_action = self.power(state_batch)
+        #     actions = tf.concat([actions, power_action], axis=1)
+
+        #     if self.TD3:
+        #         actor_loss = -tf.math.reduce_mean(self.critic_1(state_batch, actions))
+        #     else:
+        #         actor_loss = -tf.math.reduce_mean(self.critic(state_batch, actions))
+
+        # power_grad = tape.gradient(actor_loss, self.power.trainable_variables)
+        # self.power.optimizer.apply_gradients(
+        #     zip(power_grad, self.power.trainable_variables)
+        # )
 
     def learn(self):
         self.step += 1
@@ -314,7 +329,8 @@ class Agent:
                 record_range, self.batch_size, replace=True, p=p
             )
 
-        batch_indices = np.random.choice(record_range, self.batch_size, replace=False)
+        else:
+            batch_indices = np.random.choice(record_range, self.batch_size, replace=False)
 
         state_batch = tf.convert_to_tensor(self.memory.state_buffer[batch_indices])
         action_batch = tf.convert_to_tensor(self.memory.action_buffer[batch_indices])

@@ -59,6 +59,7 @@ class ActorNetwork(keras.Model):
         bound,
         name="Actor",
         chkpt_dir="../tmp/ddpg",
+        last_layer_activation="sigmoid",
     ):
         super().__init__()
         self.n_actions = n_actions
@@ -66,6 +67,7 @@ class ActorNetwork(keras.Model):
         self.model_name = name
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
+        self.last_layer_activation = last_layer_activation
         self.chkpt_dir = chkpt_dir
         self.checkpoint_file = os.path.join(
             self.chkpt_dir, self.model_name + "_ddpg.h5"
@@ -79,7 +81,7 @@ class ActorNetwork(keras.Model):
         self.fc3 = Dense(256, activation="relu")
         self.fc4 = Dense(64, activation="relu")
         # self.fc4 = Dense(64, activation='relu')
-        self.mu = Dense(self.n_actions - 1, activation="sigmoid")
+        self.mu = Dense(self.n_actions - 1, activation=last_layer_activation)
 
     def call(self, state):
         prob = self.bn0(state)
@@ -89,7 +91,12 @@ class ActorNetwork(keras.Model):
         prob = self.fc2(prob)
         prob = self.fc3(prob)
         prob = self.fc4(prob)
-        mu = self.mu(prob) * self.bound
+
+        if self.last_layer_activation == "sigmoid":
+            mu = self.mu(prob) * self.bound
+
+        elif self.last_layer_activation == "tanh":
+            mu = self.mu(prob)
 
         return mu
 

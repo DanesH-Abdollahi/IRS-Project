@@ -135,6 +135,12 @@ class Environment:
 
         product_rate = prod(log2(1 + i) for i in self.SINR)
         reward = product_rate * weighted_reward
+        # reward = weighted_reward
+
+        # reward = product_rate * weighted_reward + weighted_reward
+
+        # if product_rate < 1:
+        #     reward -= 100
 
         for i in enumerate(self.SINR):
             if i[1] < self.Users[i[0]].sinr_threshold:

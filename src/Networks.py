@@ -210,7 +210,7 @@ class Actor(keras.Model):
         self.fc0 = Dense(1024, activation="relu")
         self.fc1 = Dense(512, activation="relu")
         self.fc2 = Dense(256, activation="relu")
-        self.fc3 = Dense(128, activation="relu")
+        # self.fc3 = Dense(128, activation="relu")
         self.fc4 = Dense(64, activation="relu")
         self.fc5 = Dense(num_of_elements, activation=last_layer_activation)
 
@@ -219,7 +219,7 @@ class Actor(keras.Model):
         phase = self.fc0(phase)
         phase = self.fc1(phase)
         phase = self.fc2(phase)
-        phase = self.fc3(phase)
+        # phase = self.fc3(phase)
         phase = self.fc4(phase)
 
         if self.last_layer_activation == "sigmoid":

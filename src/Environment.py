@@ -16,7 +16,8 @@ class Environment:
         irs1_to_antenna: float,
         irs2_to_antenna: float,
         irs1_to_irs2: float,
-        transmitted_power: float
+        transmitted_power: float,
+        reward_function: str,
     ) -> None:
         self.N = num_of_antennas  # Number of Antennas
         self.M1 = num_of_irs1  # Number of Elements of IRS1
@@ -31,6 +32,7 @@ class Environment:
         self.SINR = []
         self.SumRate = 0
         self.num_of_users = 0
+        self.reward_function = reward_function
         # self.power_split_factor = 0.5
         # self.power_factors = [0.5, 0.5]
 
@@ -58,7 +60,7 @@ class Environment:
         sinr_threshold: float,
         penalty: float,
         allocated_power: float,
-        weight: float
+        weight: float,
     ):
         Usr = User(
             distance_to_antenna,
@@ -130,21 +132,28 @@ class Environment:
             self.Users[i[0]].weight * log2(1 + i[1]) for i in enumerate(self.SINR)
         )
 
-        # reward = self.SumRate
-        # reward = weighted_reward
-
         product_rate = prod(log2(1 + i) for i in self.SINR)
-        reward = product_rate * weighted_reward
-        # reward = weighted_reward
 
-        # reward = product_rate * weighted_reward + weighted_reward
+        if self.reward_function == "product*sumrate":
+            reward = product_rate * weighted_reward
 
-        # if product_rate < 1:
-        #     reward -= 100
+        elif self.reward_function == "sumrate":
+            reward = weighted_reward
 
-        for i in enumerate(self.SINR):
-            if i[1] < self.Users[i[0]].sinr_threshold:
-                reward -= self.Users[i[0]].penalty
+        elif self.reward_function == "product":
+            reward = product_rate
+
+        elif self.reward_function == "product+sumrate":
+            reward = product_rate + weighted_reward
+
+        elif self.reward_function == "man":
+            reward = (weighted_reward**2) * product_rate
+
+        elif self.reward_function == "sumrate_with_penalty":
+            reward = weighted_reward
+            for i in enumerate(self.SINR):
+                if i[1] < self.Users[i[0]].sinr_threshold:
+                    reward -= self.Users[i[0]].penalty
 
         return reward
 
@@ -210,6 +219,7 @@ class Environment:
             irs2_to_antenna=self.irs2_to_antenna,
             irs1_to_irs2=self.irs1_to_irs2,
             transmitted_power=self.transmitted_power,
+            reward_function=self.reward_function,
         )
 
         users = []

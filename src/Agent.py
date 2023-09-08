@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.optimizers import Adam
 from Buffer import Buffer
-from Networks import ActorNetwork, CriticNetwork, PowerActorNetwork
+from Networks import ActorNetwork, CriticNetwork, PowerActorNetwork, Actor
 
 
 class Agent:
@@ -27,6 +27,8 @@ class Agent:
         TD3=False,
         TD3_update_interval=2,
         last_layer_activation="sigmoid",
+        multi_actor=False,
+        multi_out_layer=False,
     ):
         self.gamma = gamma
         self.tau = tau
@@ -43,10 +45,9 @@ class Agent:
             self.min_action = 0
 
         elif last_layer_activation == "tanh":
-            self.max_action = bound/2
-            self.min_action = -bound/2
+            self.max_action = bound / 2
+            self.min_action = -bound / 2
 
-        
         self.env = env
 
         self.power_noise = 0
@@ -56,23 +57,92 @@ class Agent:
         self.TD3 = TD3
         self.update_interval = TD3_update_interval
 
-        self.actor = ActorNetwork(
-            fc1_dims=fc1,
-            fc2_dims=fc2,
-            bound=self.bounds,
-            n_actions=self.n_actions,
-            name="Actor",
-            last_layer_activation=last_layer_activation,
-        )
+        self.multi_actor = multi_actor
 
-        self.target_actor = ActorNetwork(
-            fc1_dims=fc1,
-            fc2_dims=fc2,
-            bound=self.bounds,
-            n_actions=self.n_actions,
-            name="TargetActor",
-            last_layer_activation=last_layer_activation,
-        )
+        if multi_actor:
+            self.actor_1 = Actor(
+                num_of_elements=env.M1,
+                bound=bound,
+                last_layer_activation=last_layer_activation,
+            )
+
+            self.actor_2 = Actor(
+                num_of_elements=env.M2,
+                bound=bound,
+                last_layer_activation=last_layer_activation,
+            )
+
+            self.actor_3 = Actor(
+                num_of_elements=env.N,
+                bound=bound,
+                last_layer_activation=last_layer_activation,
+            )
+
+            self.actor_4 = Actor(
+                num_of_elements=env.N,
+                bound=bound,
+                last_layer_activation=last_layer_activation,
+            )
+
+            self.target_actor_1 = Actor(
+                num_of_elements=env.M1,
+                bound=bound,
+                last_layer_activation=last_layer_activation,
+            )
+
+            self.target_actor_2 = Actor(
+                num_of_elements=env.M2,
+                bound=bound,
+                last_layer_activation=last_layer_activation,
+            )
+
+            self.target_actor_3 = Actor(
+                num_of_elements=env.N,
+                bound=bound,
+                last_layer_activation=last_layer_activation,
+            )
+
+            self.target_actor_4 = Actor(
+                num_of_elements=env.N,
+                bound=bound,
+                last_layer_activation=last_layer_activation,
+            )
+
+            self.actor_1.compile(optimizer=Adam(learning_rate=alpha))
+            self.actor_2.compile(optimizer=Adam(learning_rate=alpha))
+            self.actor_3.compile(optimizer=Adam(learning_rate=alpha))
+            self.actor_4.compile(optimizer=Adam(learning_rate=alpha))
+
+            self.target_actor_1.compile(optimizer=Adam(learning_rate=alpha))
+            self.target_actor_2.compile(optimizer=Adam(learning_rate=alpha))
+            self.target_actor_3.compile(optimizer=Adam(learning_rate=alpha))
+            self.target_actor_4.compile(optimizer=Adam(learning_rate=alpha))
+
+        else:
+            self.actor = ActorNetwork(
+                fc1_dims=fc1,
+                fc2_dims=fc2,
+                bound=self.bounds,
+                n_actions=self.n_actions,
+                env=self.env,
+                name="Actor",
+                last_layer_activation=last_layer_activation,
+                multi_out_layer=multi_out_layer,
+            )
+
+            self.target_actor = ActorNetwork(
+                fc1_dims=fc1,
+                fc2_dims=fc2,
+                bound=self.bounds,
+                n_actions=self.n_actions,
+                env=self.env,
+                name="TargetActor",
+                last_layer_activation=last_layer_activation,
+                multi_out_layer=multi_out_layer,
+            )
+
+            self.actor.compile(optimizer=Adam(learning_rate=alpha))
+            self.target_actor.compile(optimizer=Adam(learning_rate=alpha))
 
         if self.TD3:
             self.critic_1 = CriticNetwork(fc1_dims=fc1, fc2_dims=fc2, name="Critic_1")
@@ -98,9 +168,6 @@ class Agent:
             fc1_dims=128, fc2_dims=32, num_of_users=env.num_of_users, name="TargetPower"
         )
 
-        self.actor.compile(optimizer=Adam(learning_rate=alpha))
-        self.target_actor.compile(optimizer=Adam(learning_rate=alpha))
-
         if self.TD3:
             self.critic_1.compile(optimizer=Adam(learning_rate=beta))
             self.critic_2.compile(optimizer=Adam(learning_rate=beta))
@@ -124,10 +191,23 @@ class Agent:
         if self.TD3:
             if self.step % self.update_interval != 0:
                 return
-            
-            
-        for a, b in zip(self.target_actor.weights, self.actor.weights):
-            a.assign(b * tau + a * (1 - tau))
+
+        if self.multi_actor:
+            for a, b in zip(self.target_actor_1.weights, self.actor_1.weights):
+                a.assign(b * tau + a * (1 - tau))
+
+            for a, b in zip(self.target_actor_2.weights, self.actor_2.weights):
+                a.assign(b * tau + a * (1 - tau))
+
+            for a, b in zip(self.target_actor_3.weights, self.actor_3.weights):
+                a.assign(b * tau + a * (1 - tau))
+
+            for a, b in zip(self.target_actor_4.weights, self.actor_4.weights):
+                a.assign(b * tau + a * (1 - tau))
+
+        else:
+            for a, b in zip(self.target_actor.weights, self.actor.weights):
+                a.assign(b * tau + a * (1 - tau))
 
         if self.TD3:
             for a, b in zip(self.target_critic_1.weights, self.critic_1.weights):
@@ -146,23 +226,20 @@ class Agent:
     def remember(self, state, action, reward, new_state):
         self.memory.record((state, action, reward, new_state))
 
-    def save_models(self):
-        print("... saving models ...")
-        self.actor.save_weights(self.actor.checkpoint_file)
-        self.critic.save_weights(self.critic.checkpoint_file)
-        self.target_actor.save_weights(self.target_actor.checkpoint_file)
-        self.target_critic.save_weights(self.target_critic.checkpoint_file)
-
-    def load_models(self):
-        print("... loading models ...")
-        self.actor.load_weights(self.actor.checkpoint_file)
-        self.critic.load_weights(self.critic.checkpoint_file)
-        self.target_actor.load_weights(self.target_actor.checkpoint_file)
-        self.target_critic.load_weights(self.target_critic.checkpoint_file)
-
     def choose_action(self, observation, evaluate=False):
         state = tf.convert_to_tensor([observation], dtype=tf.float32)
-        actions = self.actor(state)
+
+        if self.multi_actor:
+            actions_1 = self.actor_1(state)
+            actions_2 = self.actor_2(state)
+            actions_3 = self.actor_3(state)
+            actions_4 = self.actor_4(state)
+
+            actions = tf.concat([actions_1, actions_2, actions_3, actions_4], axis=1)
+
+        else:
+            actions = self.actor(state)
+
         power_action = self.power(state)
 
         if not evaluate:
@@ -189,7 +266,24 @@ class Agent:
     def update(self, state_batch, action_batch, reward_batch, next_state_batch):
         with tf.GradientTape() as tape, tf.GradientTape() as tape2:
             if self.TD3:
-                target_actions = self.target_actor(next_state_batch)
+                if self.multi_actor:
+                    target_actions_1 = self.target_actor_1(next_state_batch)
+                    target_actions_2 = self.target_actor_2(next_state_batch)
+                    target_actions_3 = self.target_actor_3(next_state_batch)
+                    target_actions_4 = self.target_actor_4(next_state_batch)
+
+                    target_actions = tf.concat(
+                        [
+                            target_actions_1,
+                            target_actions_2,
+                            target_actions_3,
+                            target_actions_4,
+                        ],
+                        axis=1,
+                    )
+                else:
+                    target_actions = self.target_actor(next_state_batch)
+
                 target_power_action = self.target_power(next_state_batch)
 
                 target_action_noise = tf.random.normal(
@@ -221,7 +315,25 @@ class Agent:
                 )
 
             else:
-                target_actions = self.target_actor(next_state_batch)
+                if self.multi_actor:
+                    target_actions_1 = self.target_actor_1(next_state_batch)
+                    target_actions_2 = self.target_actor_2(next_state_batch)
+                    target_actions_3 = self.target_actor_3(next_state_batch)
+                    target_actions_4 = self.target_actor_4(next_state_batch)
+
+                    target_actions = tf.concat(
+                        [
+                            target_actions_1,
+                            target_actions_2,
+                            target_actions_3,
+                            target_actions_4,
+                        ],
+                        axis=1,
+                    )
+
+                else:
+                    target_actions = self.target_actor(next_state_batch)
+
                 target_power_action = self.target_power(next_state_batch)
                 target_actions = tf.concat(
                     [target_actions, target_power_action], axis=1
@@ -269,8 +381,20 @@ class Agent:
             if self.step % self.update_interval != 0:
                 return
 
-        with tf.GradientTape() as tape, tf.GradientTape() as tape2:
-            actions = self.actor(state_batch)
+        with tf.GradientTape(persistent=True) as tape, tf.GradientTape() as tape2:
+            if self.multi_actor:
+                actions_1 = self.actor_1(state_batch)
+                actions_2 = self.actor_2(state_batch)
+                actions_3 = self.actor_3(state_batch)
+                actions_4 = self.actor_4(state_batch)
+
+                actions = tf.concat(
+                    [actions_1, actions_2, actions_3, actions_4], axis=1
+                )
+
+            else:
+                actions = self.actor(state_batch)
+
             power_action = self.power(state_batch)
             actions = tf.concat([actions, power_action], axis=1)
 
@@ -280,30 +404,35 @@ class Agent:
                 critic_value = self.critic(state_batch, actions)
                 actor_loss = -tf.math.reduce_mean(critic_value)
 
-        actor_grad = tape.gradient(actor_loss, self.actor.trainable_variables)
-        power_grad = tape2.gradient(actor_loss, self.power.trainable_variables)
+        if self.multi_actor:
+            actor_1_grad = tape.gradient(actor_loss, self.actor_1.trainable_variables)
+            actor_2_grad = tape.gradient(actor_loss, self.actor_2.trainable_variables)
+            actor_3_grad = tape.gradient(actor_loss, self.actor_3.trainable_variables)
+            actor_4_grad = tape.gradient(actor_loss, self.actor_4.trainable_variables)
 
-        self.actor.optimizer.apply_gradients(
-            zip(actor_grad, self.actor.trainable_variables)
-        )
+            self.actor_1.optimizer.apply_gradients(
+                zip(actor_1_grad, self.actor_1.trainable_variables)
+            )
+            self.actor_2.optimizer.apply_gradients(
+                zip(actor_2_grad, self.actor_2.trainable_variables)
+            )
+            self.actor_3.optimizer.apply_gradients(
+                zip(actor_3_grad, self.actor_3.trainable_variables)
+            )
+            self.actor_4.optimizer.apply_gradients(
+                zip(actor_4_grad, self.actor_4.trainable_variables)
+            )
+
+        else:
+            actor_grad = tape.gradient(actor_loss, self.actor.trainable_variables)
+            self.actor.optimizer.apply_gradients(
+                zip(actor_grad, self.actor.trainable_variables)
+            )
+
+        power_grad = tape2.gradient(actor_loss, self.power.trainable_variables)
         self.power.optimizer.apply_gradients(
             zip(power_grad, self.power.trainable_variables)
         )
-
-        # with tf.GradientTape() as tape:
-        #     actions = self.actor(state_batch)
-        #     power_action = self.power(state_batch)
-        #     actions = tf.concat([actions, power_action], axis=1)
-
-        #     if self.TD3:
-        #         actor_loss = -tf.math.reduce_mean(self.critic_1(state_batch, actions))
-        #     else:
-        #         actor_loss = -tf.math.reduce_mean(self.critic(state_batch, actions))
-
-        # power_grad = tape.gradient(actor_loss, self.power.trainable_variables)
-        # self.power.optimizer.apply_gradients(
-        #     zip(power_grad, self.power.trainable_variables)
-        # )
 
     def learn(self):
         self.step += 1
@@ -330,7 +459,9 @@ class Agent:
             )
 
         else:
-            batch_indices = np.random.choice(record_range, self.batch_size, replace=False)
+            batch_indices = np.random.choice(
+                record_range, self.batch_size, replace=False
+            )
 
         state_batch = tf.convert_to_tensor(self.memory.state_buffer[batch_indices])
         action_batch = tf.convert_to_tensor(self.memory.action_buffer[batch_indices])

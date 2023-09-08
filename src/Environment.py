@@ -199,3 +199,48 @@ class Environment:
         reward = self.Reward()
 
         return new_state, reward, self.SumRate, self.SINR
+
+    def copy(self):
+        new_env = Environment(
+            num_of_antennas=self.N,
+            num_of_irs1=self.M1,
+            num_of_irs2=self.M2,
+            path_loss_exponent=self.path_loss_exponent,
+            irs1_to_antenna=self.irs1_to_antenna,
+            irs2_to_antenna=self.irs2_to_antenna,
+            irs1_to_irs2=self.irs1_to_irs2,
+            transmitted_power=self.transmitted_power,
+        )
+
+        users = []
+        for user in self.Users:
+            users.append(
+                new_env.CreateUser(
+                    distance_to_antenna=user.distance_from_antenna,
+                    distance_to_irs1=user.distance_from_irs1,
+                    distance_to_irs2=user.distance_from_irs2,
+                    noise_var=user.noise_power,
+                    los_to_antenna=user.los_to_antenna,
+                    los_to_irs1=user.los_to_irs1,
+                    los_to_irs2=user.los_to_irs2,
+                    sinr_threshold=user.sinr_threshold,
+                    penalty=user.penalty,
+                    allocated_power=user.allocated_power,
+                    weight=user.weight,
+                )
+            )
+
+        new_env.Psi1 = self.Psi1.copy()
+        new_env.Psi2 = self.Psi2.copy()
+        new_env.Hs1 = self.Hs1.copy()
+        new_env.Hs2 = self.Hs2.copy()
+        new_env.H12 = self.H12.copy()
+        new_env.H21 = self.H21.copy()
+
+        for i in enumerate(users):
+            i[1].w = self.Users[i[0]].w.copy()
+            i[1].hsu = self.Users[i[0]].hsu.copy()
+            i[1].h1u = self.Users[i[0]].h1u.copy()
+            i[1].h2u = self.Users[i[0]].h2u.copy()
+
+        return new_env

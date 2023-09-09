@@ -18,6 +18,7 @@ class Environment:
         irs1_to_irs2: float,
         transmitted_power: float,
         reward_function: str,
+        state_dB: bool,
     ) -> None:
         self.N = num_of_antennas  # Number of Antennas
         self.M1 = num_of_irs1  # Number of Elements of IRS1
@@ -33,6 +34,7 @@ class Environment:
         self.SumRate = 0
         self.num_of_users = 0
         self.reward_function = reward_function
+        self.state_dB = state_dB
         # self.power_split_factor = 0.5
         # self.power_factors = [0.5, 0.5]
 
@@ -137,23 +139,35 @@ class Environment:
         if self.reward_function == "product*sumrate":
             reward = product_rate * weighted_reward
 
-        elif self.reward_function == "sumrate":
+        elif self.reward_function == "sumrate":  # Bad
             reward = weighted_reward
 
         elif self.reward_function == "product":
             reward = product_rate
 
-        elif self.reward_function == "product+sumrate":
+        elif self.reward_function == "product+sumrate":  # Bad
             reward = product_rate + weighted_reward
 
-        elif self.reward_function == "man":
-            reward = (weighted_reward**2) * product_rate
-
-        elif self.reward_function == "sumrate_with_penalty":
+        elif self.reward_function == "sumrate_with_penalty":  # Not Good
             reward = weighted_reward
             for i in enumerate(self.SINR):
                 if i[1] < self.Users[i[0]].sinr_threshold:
                     reward -= self.Users[i[0]].penalty
+
+        elif self.reward_function == "man":
+            reward = (weighted_reward**2) * product_rate
+
+        elif self.reward_function == "man2":
+            reward = (weighted_reward**3) * product_rate
+
+        elif self.reward_function == "man3":  # Usually Better than man2
+            reward = (weighted_reward**3) * (product_rate ** (1 / 3))
+
+        elif self.reward_function == "man4":  # Good
+            reward = (weighted_reward**2) * (product_rate ** (1 / 3))
+
+        elif self.reward_function == "man5":  # Good
+            reward = (weighted_reward**4) * (product_rate ** (1 / 3))
 
         return reward
 
@@ -166,7 +180,13 @@ class Environment:
         #     ),
         #     axis=0,
         # )
-        self.state = np.array(self.SINR)
+
+        if self.state_dB:
+            self.state = np.array([10 * log10(i) for i in self.SINR])
+
+        else:
+            self.state = np.array(self.SINR)
+
         return self.state
 
     def Reset(self):
@@ -220,6 +240,7 @@ class Environment:
             irs1_to_irs2=self.irs1_to_irs2,
             transmitted_power=self.transmitted_power,
             reward_function=self.reward_function,
+            state_dB=self.state_dB,
         )
 
         users = []

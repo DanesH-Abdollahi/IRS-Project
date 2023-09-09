@@ -51,7 +51,7 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
         else:
             moving_average[i] = np.mean(sumrate[i - window_size + 1:i + 1])
 
-    last_sumrate = moving_average[-1]
+    last_sumrate = np.mean(sumrate[-10:])
     
     if isplot:
         plt.plot(range(1, len(moving_average) + 1), moving_average,
@@ -84,7 +84,7 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
         else:
             moving_average[i] = np.mean(u1_sinr[i - window_size + 1:i + 1])
 
-    last_u1_sinr = moving_average[-1]
+    last_u1_sinr = np.mean(u1_sinr[-10:])
 
     if isplot:
         plt.plot(range(1, len(moving_average) + 1), moving_average,
@@ -147,7 +147,7 @@ def plot(*, score_history, sumrate, u1_sinr, u2_sinr=None, mean: bool = False, t
             else:
                 moving_average[i] = np.mean(u2_sinr[i - window_size + 1:i + 1])
 
-        last_u2_sinr = moving_average[-1]
+        last_u2_sinr = np.mean(u2_sinr[-10:])
 
         # plt.axhline(y=u2_sinr.mean(), xmin=0, xmax=1, color='r', label='Mean')
         if isplot:

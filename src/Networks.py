@@ -207,6 +207,7 @@ class Actor(keras.Model):
         self.last_layer_activation = last_layer_activation
 
         self.bn0 = BatchNormalization()
+        self.fc00 = Dense(2024, activation="relu")
         self.fc0 = Dense(1024, activation="relu")
         self.fc1 = Dense(512, activation="relu")
         self.fc2 = Dense(256, activation="relu")
@@ -216,6 +217,7 @@ class Actor(keras.Model):
 
     def call(self, state):
         phase = self.bn0(state)
+        phase = self.fc00(phase)
         phase = self.fc0(phase)
         phase = self.fc1(phase)
         phase = self.fc2(phase)

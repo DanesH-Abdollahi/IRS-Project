@@ -182,7 +182,15 @@ class Environment:
         # )
 
         if self.state_dB:
-            self.state = np.array([10 * log10(i) for i in self.SINR])
+            tmp = []
+            for i in self.SINR:
+                if i != 0:
+                    tmp.append(10 * log10(i))
+
+                else:
+                    tmp.append(i)
+
+            self.state = np.array(tmp)
 
         else:
             self.state = np.array(self.SINR)

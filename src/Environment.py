@@ -37,6 +37,9 @@ class Environment:
         self.state_dB = state_dB
         # self.power_split_factor = 0.5
         # self.power_factors = [0.5, 0.5]
+        self.sumrates_array = np.zeros((10000,))
+        self.iter = 0
+        self.max_sumrate = 0
 
         # Generate Random Channel Coefficient Matrix(es)
         self.Hs1 = Random_Complex_Mat(self.M1, self.N) / self.irs1_to_antenna
@@ -169,10 +172,27 @@ class Environment:
         elif self.reward_function == "man5":  # Good
             reward = (weighted_reward**4) * (product_rate ** (1 / 3))
 
+        elif self.reward_function == "man6":
+            reward = 0.65 * (weighted_reward**3) * product_rate + (
+                0.25 * weighted_reward
+            )
+
+        elif self.reward_function == "man7":
+            reward = 0.65 * (weighted_reward**3) * (product_rate ** (1 / 3)) + (
+                0.25 * weighted_reward
+            )
+
         return reward
 
     def State(self) -> None:
         self.CalculateSINR()
+
+        self.sumrates_array[self.iter] = self.SumRate
+        self.iter += 1
+
+        if self.SumRate > self.max_sumrate:
+            self.max_sumrate = self.SumRate
+
         # self.state = np.concatenate(
         #     (
         #         self.SINR,  # N
@@ -182,15 +202,17 @@ class Environment:
         # )
 
         if self.state_dB:
-            tmp = []
-            for i in self.SINR:
-                if i != 0:
-                    tmp.append(10 * log10(i))
+            # tmp = []
+            # for i in self.SINR:
+            #     if i != 0:
+            #         tmp.append(10 * log10(i))
 
-                else:
-                    tmp.append(i)
+            #     else:
+            #         tmp.append(i)
 
-            self.state = np.array(tmp)
+            # self.state = np.array(tmp)
+
+            self.state = np.array([log2(1 + i) for i in self.SINR])
 
         else:
             self.state = np.array(self.SINR)
@@ -208,6 +230,10 @@ class Environment:
         return self.State()
 
     def Step(self, action):
+        self.CalculateSINR()
+        old_sumrate = self.SumRate
+        old_max = self.max_sumrate
+
         action = np.array(action)
         self.Psi1 = np.diag(RealToPhase(action[0 : self.M1]))
         self.Psi2 = np.diag(RealToPhase(action[self.M1 : self.M1 + self.M2]))
@@ -234,6 +260,13 @@ class Environment:
 
         new_state = self.State()
         reward = self.Reward()
+
+        reward += 0.7 * (self.SumRate - old_max) + 0.3 * (self.SumRate - old_sumrate)
+        # if self.SumRate < old_sumrate:
+        #     reward -= 0.2
+
+        # elif self.SumRate > old_sumrate:
+        #     reward += 0.2
 
         return new_state, reward, self.SumRate, self.SINR
 

@@ -16,7 +16,7 @@ class Agent:
         beta=0.002,
         env=None,
         gamma=0.99,
-        max_size=100000,
+        buffer_size=100000,
         tau=0.005,
         fc1=512,
         fc2=256,
@@ -31,9 +31,10 @@ class Agent:
         multi_out_layer=False,
     ):
         self.gamma = gamma
-        self.tau = tau
+        self.tau = tf.constant(tau)
+        self.num_states = num_states
         self.memory = Buffer(
-            num_states, n_actions, buffer_capacity=max_size, batch_size=batch_size
+            num_states, n_actions, buffer_capacity=buffer_size, batch_size=batch_size
         )
         self.batch_size = batch_size
         self.n_actions = n_actions
@@ -181,7 +182,7 @@ class Agent:
         self.power.compile(optimizer=Adam(learning_rate=alpha / 2))
         self.target_power.compile(optimizer=Adam(learning_rate=beta / 2))
 
-        self.update_network_parameters(tau=1)  # Hard update
+        self.update_network_parameters(tau=tf.constant(1))  # Hard update
 
     @tf.function
     def update_network_parameters(self, tau=None):

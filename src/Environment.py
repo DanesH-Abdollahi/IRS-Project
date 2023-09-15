@@ -172,15 +172,43 @@ class Environment:
         elif self.reward_function == "man5":  # Good
             reward = (weighted_reward**4) * (product_rate ** (1 / 3))
 
-        elif self.reward_function == "man6":
+        # --------------------------------------------------------------------------------
+
+        elif self.reward_function == "man6":  # Good
             reward = 0.65 * (weighted_reward**3) * product_rate + (
-                0.25 * weighted_reward
+                0.35 * weighted_reward
             )
+
+        elif self.reward_function == "man6_2":
+            reward = 0.65 * (weighted_reward**2) * product_rate + (
+                0.35 * weighted_reward
+            )
+
+        elif self.reward_function == "man6_3":
+            reward = 0.65 * (weighted_reward) * product_rate + (0.35 * weighted_reward)
+
+        # --------------------------------------------------------------------------------
 
         elif self.reward_function == "man7":
             reward = 0.65 * (weighted_reward**3) * (product_rate ** (1 / 3)) + (
-                0.25 * weighted_reward
+                0.35 * weighted_reward
             )
+
+        elif self.reward_function == "man8":
+            if product_rate >= 1:
+                reward = (
+                    0.65 * (weighted_reward**2) * (product_rate ** (1 / 2))
+                    + 0.35 * weighted_reward
+                )
+
+            else:
+                reward = (
+                    0.65 * (weighted_reward**2) * (product_rate ** (2))
+                    + 0.35 * weighted_reward
+                )
+
+        elif self.reward_function == "man9":
+            reward = (weighted_reward**2) * (product_rate ** (1 / 2))
 
         return reward
 
@@ -261,7 +289,9 @@ class Environment:
         new_state = self.State()
         reward = self.Reward()
 
-        reward += 0.7 * (self.SumRate - old_max) + 0.3 * (self.SumRate - old_sumrate)
+        # reward += 0.7 * (self.SumRate - old_max) + 0.3 * (self.SumRate - old_sumrate)
+        # reward += 1 * (self.SumRate - 8.0)
+        # reward += 1 * (self.SumRate - old_sumrate)
         # if self.SumRate < old_sumrate:
         #     reward -= 0.2
 

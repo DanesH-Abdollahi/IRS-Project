@@ -185,7 +185,14 @@ class Environment:
             )
 
         elif self.reward_function == "man6_3":
-            reward = 0.65 * (weighted_reward) * product_rate + (0.35 * weighted_reward)
+            reward = 0.65 * (weighted_reward**4) * product_rate + (
+                0.35 * weighted_reward
+            )
+
+        elif self.reward_function == "man6_4":  
+            reward = 0.8 * (weighted_reward**3) * product_rate + (
+                0.2 * (weighted_reward**1.5)
+            )
 
         # --------------------------------------------------------------------------------
 

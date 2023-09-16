@@ -38,6 +38,7 @@ class Agent:
         multi_actor=False,
         multi_out_layer=False,
         num_of_actors=4,
+        dummy_actor_input=False,
     ):
         self.gamma = gamma
         self.tau = tf.constant(tau)
@@ -76,48 +77,56 @@ class Agent:
                     num_of_elements=env.M1,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.actor_2 = Actor(
                     num_of_elements=env.M2,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.actor_3 = Actor(
                     num_of_elements=env.N,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.actor_4 = Actor(
                     num_of_elements=env.N,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.target_actor_1 = Actor(
                     num_of_elements=env.M1,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.target_actor_2 = Actor(
                     num_of_elements=env.M2,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.target_actor_3 = Actor(
                     num_of_elements=env.N,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.target_actor_4 = Actor(
                     num_of_elements=env.N,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.actor_1.compile(optimizer=Adam(learning_rate=alpha))
@@ -135,36 +144,42 @@ class Agent:
                     num_of_elements=env.M1,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.actor_2 = Actor(
                     num_of_elements=env.M2,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.actor_3 = Actor(
                     num_of_elements=env.N * env.num_of_users,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.target_actor_1 = Actor(
                     num_of_elements=env.M1,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.target_actor_2 = Actor(
                     num_of_elements=env.M2,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.target_actor_3 = Actor(
                     num_of_elements=env.N * env.num_of_users,
                     bound=bound,
                     last_layer_activation=last_layer_activation,
+                    dummy_actor_input=dummy_actor_input,
                 )
 
                 self.actor_1.compile(optimizer=Adam(learning_rate=alpha))
@@ -382,7 +397,7 @@ class Agent:
                     stddev=self.noise,
                 )
 
-                target_action_noise = tf.clip_by_value(target_action_noise, -0.3, 0.3)
+                target_action_noise = tf.clip_by_value(target_action_noise, -0.5, 0.5)
 
                 target_actions += target_action_noise
 

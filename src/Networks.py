@@ -3,6 +3,7 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.layers import Dense, BatchNormalization, Dropout, PReLU, LeakyReLU
 from tensorflow.keras.initializers import HeUniform, GlorotNormal, HeNormal
+from numpy import array
 
 
 class CriticNetwork(keras.Model):
@@ -284,12 +285,14 @@ class Actor(keras.Model):
         bound,
         name="IRSActor",
         last_layer_activation="sigmoid",
+        dummy_actor_input=False,
     ):
         super().__init__()
         self.model_name = name
         self.num_of_elements = num_of_elements
         self.bound = bound
         self.last_layer_activation = last_layer_activation
+        self.dummy_actor_input = dummy_actor_input
 
         self.initilizer = GlorotNormal(23)
         self.initilizer1 = HeUniform(23)
@@ -339,6 +342,9 @@ class Actor(keras.Model):
 
     def call(self, state):
         phase = state
+        if self.dummy_actor_input:
+            phase = tf.ones_like(phase)
+            
         # phase = self.bn0(state)
 
         # phase = self.fc_00(phase)

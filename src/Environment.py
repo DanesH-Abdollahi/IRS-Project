@@ -19,6 +19,7 @@ class Environment:
         transmitted_power: float,
         reward_function: str,
         state_dB: bool,
+        without_irs: bool,
     ) -> None:
         self.N = num_of_antennas  # Number of Antennas
         self.M1 = num_of_irs1  # Number of Elements of IRS1
@@ -40,6 +41,7 @@ class Environment:
         self.sumrates_array = np.zeros((10000,))
         self.iter = 0
         self.max_sumrate = 0
+        self.without_irs = without_irs
 
         # Generate Random Channel Coefficient Matrix(es)
         self.Hs1 = Random_Complex_Mat(self.M1, self.N) / self.irs1_to_antenna
@@ -180,8 +182,8 @@ class Environment:
             )
 
         elif self.reward_function == "man6_2":
-            reward = 0.65 * (weighted_reward**2) * product_rate + (
-                0.35 * weighted_reward
+            reward = 0.75 * (weighted_reward**3) * product_rate + (
+                0.25 * weighted_reward
             )
 
         elif self.reward_function == "man6_3":
@@ -189,7 +191,7 @@ class Environment:
                 0.35 * weighted_reward
             )
 
-        elif self.reward_function == "man6_4":  
+        elif self.reward_function == "man6_4":
             reward = 0.8 * (weighted_reward**3) * product_rate + (
                 0.2 * (weighted_reward**1.5)
             )
@@ -270,8 +272,10 @@ class Environment:
         old_max = self.max_sumrate
 
         action = np.array(action)
-        self.Psi1 = np.diag(RealToPhase(action[0 : self.M1]))
-        self.Psi2 = np.diag(RealToPhase(action[self.M1 : self.M1 + self.M2]))
+
+        if not self.without_irs:
+            self.Psi1 = np.diag(RealToPhase(action[0 : self.M1]))
+            self.Psi2 = np.diag(RealToPhase(action[self.M1 : self.M1 + self.M2]))
 
         action = np.append(action, 1 - action[-1])
 
@@ -296,8 +300,8 @@ class Environment:
         new_state = self.State()
         reward = self.Reward()
 
-        # reward += 0.7 * (self.SumRate - old_max) + 0.3 * (self.SumRate - old_sumrate)
-        # reward += 1 * (self.SumRate - 8.0)
+        # reward += 0.8 * (self.SumRate - old_max) + 0.2 * (self.SumRate - old_sumrate)
+        # reward += 1 * (self.SumRate - old_max)
         # reward += 1 * (self.SumRate - old_sumrate)
         # if self.SumRate < old_sumrate:
         #     reward -= 0.2
@@ -319,6 +323,7 @@ class Environment:
             transmitted_power=self.transmitted_power,
             reward_function=self.reward_function,
             state_dB=self.state_dB,
+            without_irs=self.without_irs,
         )
 
         users = []

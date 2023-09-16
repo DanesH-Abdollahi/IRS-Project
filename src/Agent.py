@@ -25,7 +25,7 @@ class Agent:
         env=None,
         gamma=0.99,
         buffer_size=100000,
-        tau=0.005,
+        tau=0.0025,
         fc1=512,
         fc2=256,
         batch_size=256,
@@ -34,7 +34,7 @@ class Agent:
         uniform_selection=True,
         TD3=False,
         TD3_update_interval=2,
-        last_layer_activation="sigmoid",
+        last_layer_activation="tanh",
         multi_actor=False,
         multi_out_layer=False,
         num_of_actors=4,
@@ -43,8 +43,23 @@ class Agent:
         self.gamma = gamma
         self.tau = tf.constant(tau)
         self.num_states = num_states
+        if multi_actor:
+            total_n_actions = 0
+            for i in range(num_of_actors):
+                total_n_actions += n_actions[i]
+
+            total_n_actions += env.num_of_users - 1
+
+        else:
+            total_n_actions = n_actions
+
+        self.total_n_actions = total_n_actions
+
         self.memory = Buffer(
-            num_states, n_actions, buffer_capacity=buffer_size, batch_size=batch_size
+            num_states,
+            total_n_actions,
+            buffer_capacity=buffer_size,
+            batch_size=batch_size,
         )
         self.batch_size = batch_size
         self.n_actions = n_actions
@@ -72,123 +87,29 @@ class Agent:
         self.multi_actor = multi_actor
 
         if multi_actor:
-            if self.num_of_actors == 4:
-                self.actor_1 = Actor(
-                    num_of_elements=env.M1,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
+            self.actors = []
+            self.target_actors = []
+            for i in range(self.num_of_actors):
+                self.actors.append(
+                    Actor(
+                        num_of_elements=n_actions[i],
+                        bound=bound,
+                        last_layer_activation=last_layer_activation,
+                        dummy_actor_input=dummy_actor_input,
+                    )
                 )
 
-                self.actor_2 = Actor(
-                    num_of_elements=env.M2,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
+                self.target_actors.append(
+                    Actor(
+                        num_of_elements=n_actions[i],
+                        bound=bound,
+                        last_layer_activation=last_layer_activation,
+                        dummy_actor_input=dummy_actor_input,
+                    )
                 )
 
-                self.actor_3 = Actor(
-                    num_of_elements=env.N,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.actor_4 = Actor(
-                    num_of_elements=env.N,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.target_actor_1 = Actor(
-                    num_of_elements=env.M1,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.target_actor_2 = Actor(
-                    num_of_elements=env.M2,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.target_actor_3 = Actor(
-                    num_of_elements=env.N,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.target_actor_4 = Actor(
-                    num_of_elements=env.N,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.actor_1.compile(optimizer=Adam(learning_rate=alpha))
-                self.actor_2.compile(optimizer=Adam(learning_rate=alpha))
-                self.actor_3.compile(optimizer=Adam(learning_rate=alpha))
-                self.actor_4.compile(optimizer=Adam(learning_rate=alpha))
-
-                self.target_actor_1.compile(optimizer=Adam(learning_rate=alpha))
-                self.target_actor_2.compile(optimizer=Adam(learning_rate=alpha))
-                self.target_actor_3.compile(optimizer=Adam(learning_rate=alpha))
-                self.target_actor_4.compile(optimizer=Adam(learning_rate=alpha))
-
-            elif self.num_of_actors == 3:
-                self.actor_1 = Actor(
-                    num_of_elements=env.M1,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.actor_2 = Actor(
-                    num_of_elements=env.M2,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.actor_3 = Actor(
-                    num_of_elements=env.N * env.num_of_users,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.target_actor_1 = Actor(
-                    num_of_elements=env.M1,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.target_actor_2 = Actor(
-                    num_of_elements=env.M2,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.target_actor_3 = Actor(
-                    num_of_elements=env.N * env.num_of_users,
-                    bound=bound,
-                    last_layer_activation=last_layer_activation,
-                    dummy_actor_input=dummy_actor_input,
-                )
-
-                self.actor_1.compile(optimizer=Adam(learning_rate=alpha))
-                self.actor_2.compile(optimizer=Adam(learning_rate=alpha))
-                self.actor_3.compile(optimizer=Adam(learning_rate=alpha))
-
-                self.target_actor_1.compile(optimizer=Adam(learning_rate=alpha))
-                self.target_actor_2.compile(optimizer=Adam(learning_rate=alpha))
-                self.target_actor_3.compile(optimizer=Adam(learning_rate=alpha))
+                self.actors[i].compile(optimizer=Adam(learning_rate=alpha))
+                self.target_actors[i].compile(optimizer=Adam(learning_rate=alpha))
 
         else:
             self.actor = ActorNetwork(
@@ -200,6 +121,7 @@ class Agent:
                 name="Actor",
                 last_layer_activation=last_layer_activation,
                 multi_out_layer=multi_out_layer,
+                dummy_actor_input=dummy_actor_input,
             )
 
             self.target_actor = ActorNetwork(
@@ -211,6 +133,7 @@ class Agent:
                 name="TargetActor",
                 last_layer_activation=last_layer_activation,
                 multi_out_layer=multi_out_layer,
+                dummy_actor_input=dummy_actor_input,
             )
 
             self.actor.compile(optimizer=Adam(learning_rate=alpha))
@@ -265,27 +188,8 @@ class Agent:
                 return
 
         if self.multi_actor:
-            if self.num_of_actors == 4:
-                for a, b in zip(self.target_actor_1.weights, self.actor_1.weights):
-                    a.assign(b * tau + a * (1 - tau))
-
-                for a, b in zip(self.target_actor_2.weights, self.actor_2.weights):
-                    a.assign(b * tau + a * (1 - tau))
-
-                for a, b in zip(self.target_actor_3.weights, self.actor_3.weights):
-                    a.assign(b * tau + a * (1 - tau))
-
-                for a, b in zip(self.target_actor_4.weights, self.actor_4.weights):
-                    a.assign(b * tau + a * (1 - tau))
-
-            elif self.num_of_actors == 3:
-                for a, b in zip(self.target_actor_1.weights, self.actor_1.weights):
-                    a.assign(b * tau + a * (1 - tau))
-
-                for a, b in zip(self.target_actor_2.weights, self.actor_2.weights):
-                    a.assign(b * tau + a * (1 - tau))
-
-                for a, b in zip(self.target_actor_3.weights, self.actor_3.weights):
+            for i in range(self.num_of_actors):
+                for a, b in zip(self.target_actors[i].weights, self.actors[i].weights):
                     a.assign(b * tau + a * (1 - tau))
 
         else:
@@ -313,22 +217,11 @@ class Agent:
         state = tf.convert_to_tensor([observation], dtype=tf.float32)
 
         if self.multi_actor:
-            if self.num_of_actors == 4:
-                actions_1 = self.actor_1(state)
-                actions_2 = self.actor_2(state)
-                actions_3 = self.actor_3(state)
-                actions_4 = self.actor_4(state)
+            actions = []
+            for i in range(self.num_of_actors):
+                actions.append(self.actors[i](state))
 
-                actions = tf.concat(
-                    [actions_1, actions_2, actions_3, actions_4], axis=1
-                )
-
-            elif self.num_of_actors == 3:
-                actions_1 = self.actor_1(state)
-                actions_2 = self.actor_2(state)
-                actions_3 = self.actor_3(state)
-
-                actions = tf.concat([actions_1, actions_2, actions_3], axis=1)
+            actions = tf.concat(actions, axis=1)
 
         else:
             actions = self.actor(state)
@@ -337,7 +230,7 @@ class Agent:
 
         if not evaluate:
             action_noise = tf.random.normal(
-                shape=[self.n_actions - 1], mean=0, stddev=self.noise
+                shape=[self.total_n_actions - 1], mean=0, stddev=self.noise
             )
             actions += action_noise
 
@@ -360,31 +253,11 @@ class Agent:
         with tf.GradientTape() as tape, tf.GradientTape() as tape2:
             if self.TD3:
                 if self.multi_actor:
-                    if self.num_of_actors == 4:
-                        target_actions_1 = self.target_actor_1(next_state_batch)
-                        target_actions_2 = self.target_actor_2(next_state_batch)
-                        target_actions_3 = self.target_actor_3(next_state_batch)
-                        target_actions_4 = self.target_actor_4(next_state_batch)
+                    target_actions = []
+                    for i in range(self.num_of_actors):
+                        target_actions.append(self.target_actors[i](next_state_batch))
 
-                        target_actions = tf.concat(
-                            [
-                                target_actions_1,
-                                target_actions_2,
-                                target_actions_3,
-                                target_actions_4,
-                            ],
-                            axis=1,
-                        )
-
-                    elif self.num_of_actors == 3:
-                        target_actions_1 = self.target_actor_1(next_state_batch)
-                        target_actions_2 = self.target_actor_2(next_state_batch)
-                        target_actions_3 = self.target_actor_3(next_state_batch)
-
-                        target_actions = tf.concat(
-                            [target_actions_1, target_actions_2, target_actions_3],
-                            axis=1,
-                        )
+                    target_actions = tf.concat(target_actions, axis=1)
 
                 else:
                     target_actions = self.target_actor(next_state_batch)
@@ -392,7 +265,7 @@ class Agent:
                 target_power_action = self.target_power(next_state_batch)
 
                 target_action_noise = tf.random.normal(
-                    shape=[self.batch_size, self.n_actions - 1],
+                    shape=[self.batch_size, self.total_n_actions - 1],
                     mean=0,
                     stddev=self.noise,
                 )
@@ -421,31 +294,11 @@ class Agent:
 
             else:
                 if self.multi_actor:
-                    if self.num_of_actors == 4:
-                        target_actions_1 = self.target_actor_1(next_state_batch)
-                        target_actions_2 = self.target_actor_2(next_state_batch)
-                        target_actions_3 = self.target_actor_3(next_state_batch)
-                        target_actions_4 = self.target_actor_4(next_state_batch)
+                    target_actions = []
+                    for i in range(self.num_of_actors):
+                        target_actions.append(self.target_actors[i](next_state_batch))
 
-                        target_actions = tf.concat(
-                            [
-                                target_actions_1,
-                                target_actions_2,
-                                target_actions_3,
-                                target_actions_4,
-                            ],
-                            axis=1,
-                        )
-
-                    elif self.num_of_actors == 3:
-                        target_actions_1 = self.target_actor_1(next_state_batch)
-                        target_actions_2 = self.target_actor_2(next_state_batch)
-                        target_actions_3 = self.target_actor_3(next_state_batch)
-
-                        target_actions = tf.concat(
-                            [target_actions_1, target_actions_2, target_actions_3],
-                            axis=1,
-                        )
+                    target_actions = tf.concat(target_actions, axis=1)
 
                 else:
                     target_actions = self.target_actor(next_state_batch)
@@ -499,22 +352,11 @@ class Agent:
 
         with tf.GradientTape(persistent=True) as tape, tf.GradientTape() as tape2:
             if self.multi_actor:
-                if self.num_of_actors == 4:
-                    actions_1 = self.actor_1(state_batch)
-                    actions_2 = self.actor_2(state_batch)
-                    actions_3 = self.actor_3(state_batch)
-                    actions_4 = self.actor_4(state_batch)
+                actions = []
+                for i in range(self.num_of_actors):
+                    actions.append(self.actors[i](state_batch))
 
-                    actions = tf.concat(
-                        [actions_1, actions_2, actions_3, actions_4], axis=1
-                    )
-
-                elif self.num_of_actors == 3:
-                    actions_1 = self.actor_1(state_batch)
-                    actions_2 = self.actor_2(state_batch)
-                    actions_3 = self.actor_3(state_batch)
-
-                    actions = tf.concat([actions_1, actions_2, actions_3], axis=1)
+                actions = tf.concat(actions, axis=1)
 
             else:
                 actions = self.actor(state_batch)
@@ -529,52 +371,12 @@ class Agent:
                 actor_loss = -tf.math.reduce_mean(critic_value)
 
         if self.multi_actor:
-            if self.num_of_actors == 4:
-                actor_1_grad = tape.gradient(
-                    actor_loss, self.actor_1.trainable_variables
+            for i in range(self.num_of_actors):
+                actor_grad = tape.gradient(
+                    actor_loss, self.actors[i].trainable_variables
                 )
-                actor_2_grad = tape.gradient(
-                    actor_loss, self.actor_2.trainable_variables
-                )
-                actor_3_grad = tape.gradient(
-                    actor_loss, self.actor_3.trainable_variables
-                )
-                actor_4_grad = tape.gradient(
-                    actor_loss, self.actor_4.trainable_variables
-                )
-
-                self.actor_1.optimizer.apply_gradients(
-                    zip(actor_1_grad, self.actor_1.trainable_variables)
-                )
-                self.actor_2.optimizer.apply_gradients(
-                    zip(actor_2_grad, self.actor_2.trainable_variables)
-                )
-                self.actor_3.optimizer.apply_gradients(
-                    zip(actor_3_grad, self.actor_3.trainable_variables)
-                )
-                self.actor_4.optimizer.apply_gradients(
-                    zip(actor_4_grad, self.actor_4.trainable_variables)
-                )
-
-            elif self.num_of_actors == 3:
-                actor_1_grad = tape.gradient(
-                    actor_loss, self.actor_1.trainable_variables
-                )
-                actor_2_grad = tape.gradient(
-                    actor_loss, self.actor_2.trainable_variables
-                )
-                actor_3_grad = tape.gradient(
-                    actor_loss, self.actor_3.trainable_variables
-                )
-
-                self.actor_1.optimizer.apply_gradients(
-                    zip(actor_1_grad, self.actor_1.trainable_variables)
-                )
-                self.actor_2.optimizer.apply_gradients(
-                    zip(actor_2_grad, self.actor_2.trainable_variables)
-                )
-                self.actor_3.optimizer.apply_gradients(
-                    zip(actor_3_grad, self.actor_3.trainable_variables)
+                self.actors[i].optimizer.apply_gradients(
+                    zip(actor_grad, self.actors[i].trainable_variables)
                 )
 
         else:

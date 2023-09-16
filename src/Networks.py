@@ -31,7 +31,7 @@ class CriticNetwork(keras.Model):
         # self.fc00 = Dense(4048, activation="relu")
 
         # self.fc00 = Dense(
-        #     2024,
+        #     1024,
         #     activation=self.activation00,
         # )
 
@@ -81,6 +81,7 @@ class CriticNetwork(keras.Model):
         state_value = self.fc_1(state_value)
         # state_value = self.fc0(state_value)
         # state_value = self.fc1(state_value)
+        # state_value = self.concat([state_value, state])
         state_value = self.fc2(state_value)
         # state_value = self.fc3(state_value)
 
@@ -108,6 +109,7 @@ class ActorNetwork(keras.Model):
         chkpt_dir="../tmp/ddpg",
         last_layer_activation="sigmoid",
         multi_out_layer=False,
+        dummy_actor_input=False,
     ):
         super().__init__()
         self.n_actions = n_actions
@@ -121,6 +123,7 @@ class ActorNetwork(keras.Model):
             self.chkpt_dir, self.model_name + "_ddpg.h5"
         )
         self.multi_out_layer = multi_out_layer
+        self.dummy_actor_input = dummy_actor_input
 
         # self.bn0 = BatchNormalization()
         # self.fc00 = Dense(4048, activation="relu")
@@ -131,40 +134,43 @@ class ActorNetwork(keras.Model):
         # self.fc4 = Dense(64, activation='relu')
         # self.mu = Dense(self.n_actions - 1, activation=last_layer_activation)
 
+        # self.moshtarak = Dense(128, activation=PReLU())
+        # self.drop0 = Dropout(0.2)
+
         if multi_out_layer:
-            self.irs1_0 = Dense(256, activation="relu")
-            self.irs1_0_1 = Dense(512, activation="relu")
-            # self.irs1_0_2 = Dense(1024, activation="relu")
-            self.irs1_1 = Dense(1024, activation="relu")
-            self.irs1_2 = Dense(512, activation="relu")
-            self.irs1_3 = Dense(256, activation="relu")
+            # self.irs1_0 = Dense(256, activation=PReLU())
+            # self.irs1_0_1 = Dense(512, activation=PReLU())
+            # self.irs1_0_2 = Dense(1024, activation=PReLU())
+            self.irs1_1 = Dense(1024, activation=PReLU())
+            self.irs1_2 = Dense(512, activation=PReLU())
+            # self.irs1_3 = Dense(256, activation="relu")
             # self.irs1_4 = Dense(128, activation="relu")
             self.irs1_5 = Dense(env.M1, activation=last_layer_activation)
 
-            self.irs2_0 = Dense(256, activation="relu")
-            self.irs2_0_1 = Dense(512, activation="relu")
-            # self.irs2_0_2 = Dense(1024, activation="relu")
-            self.irs2_1 = Dense(1024, activation="relu")
-            self.irs2_2 = Dense(512, activation="relu")
-            self.irs2_3 = Dense(256, activation="relu")
+            # self.irs2_0 = Dense(256, activation=PReLU())
+            # self.irs2_0_1 = Dense(512, activation=PReLU())
+            # self.irs2_0_2 = Dense(1024, activation=PReLU())
+            self.irs2_1 = Dense(1024, activation=PReLU())
+            self.irs2_2 = Dense(512, activation=PReLU())
+            # self.irs2_3 = Dense(256, activation="relu")
             # self.irs2_4 = Dense(128, activation="relu")
             self.irs2_5 = Dense(env.M2, activation=last_layer_activation)
 
-            self.w1_0 = Dense(256, activation="relu")
-            self.w1_0_1 = Dense(512, activation="relu")
-            # self.w1_0_2 = Dense(1024, activation="relu")
-            self.w1_1 = Dense(1024, activation="relu")
-            self.w1_2 = Dense(512, activation="relu")
-            self.w1_3 = Dense(256, activation="relu")
+            # self.w1_0 = Dense(256, activation=PReLU())
+            # self.w1_0_1 = Dense(512, activation=PReLU())
+            # self.w1_0_2 = Dense(1024, activation=PReLU())
+            self.w1_1 = Dense(1024, activation=PReLU())
+            self.w1_2 = Dense(512, activation=PReLU())
+            # self.w1_3 = Dense(256, activation="relu")
             # self.w1_4 = Dense(128, activation="relu")
             self.w1_5 = Dense(env.N, activation=last_layer_activation)
 
-            self.w2_0 = Dense(256, activation="relu")
-            self.w2_0_1 = Dense(512, activation="relu")
-            # self.w2_0_2 = Dense(1024, activation="relu")
-            self.w2_1 = Dense(1024, activation="relu")
-            self.w2_2 = Dense(512, activation="relu")
-            self.w2_3 = Dense(256, activation="relu")
+            # self.w2_0 = Dense(256, activation=PReLU())
+            # self.w2_0_1 = Dense(512, activation=PReLU())
+            # self.w2_0_2 = Dense(1024, activation=PReLU())
+            self.w2_1 = Dense(1024, activation=PReLU())
+            self.w2_2 = Dense(512, activation=PReLU())
+            # self.w2_3 = Dense(256, activation="relu")
             # self.w2_4 = Dense(128, activation="relu")
             self.w2_5 = Dense(env.N, activation=last_layer_activation)
 
@@ -179,6 +185,9 @@ class ActorNetwork(keras.Model):
 
     def call(self, state):
         prob = state
+        if self.dummy_actor_input:
+            prob = tf.ones_like(prob)
+
         # prob = self.bn0(state)
         # prob = self.fc00(prob)
         # prob = self.fc0(prob)
@@ -186,45 +195,47 @@ class ActorNetwork(keras.Model):
         # prob = self.fc2(prob)
         # prob = self.fc3(prob)
         # prob = self.fc4(prob)
+        # prob = self.moshtarak(prob)
+        # prob = self.drop0(prob)
 
         if self.multi_out_layer:
             irs1 = prob
-            irs1 = self.irs1_0(prob)
-            irs1 = self.irs1_0_1(irs1)
+            # irs1 = self.irs1_0(prob)
+            # irs1 = self.irs1_0_1(irs1)
             # irs1 = self.irs1_0_2(irs1)
             irs1 = self.irs1_1(irs1)
             irs1 = self.irs1_2(irs1)
-            irs1 = self.irs1_3(irs1)
+            # irs1 = self.irs1_3(irs1)
             # irs1 = self.irs1_4(irs1)
             irs1 = self.irs1_5(irs1)
 
             irs2 = prob
-            irs2 = self.irs2_0(prob)
-            irs2 = self.irs2_0_1(irs2)
+            # irs2 = self.irs2_0(prob)
+            # irs2 = self.irs2_0_1(irs2)
             # irs2 = self.irs2_0_2(irs2)
             irs2 = self.irs2_1(irs2)
             irs2 = self.irs2_2(irs2)
-            irs2 = self.irs2_3(irs2)
+            # irs2 = self.irs2_3(irs2)
             # irs2 = self.irs2_4(irs2)
             irs2 = self.irs2_5(irs2)
 
             w1 = prob
-            w1 = self.w1_0(prob)
-            w1 = self.w1_0_1(w1)
+            # w1 = self.w1_0(prob)
+            # w1 = self.w1_0_1(w1)
             # w1 = self.w1_0_2(w1)
             w1 = self.w1_1(w1)
             w1 = self.w1_2(w1)
-            w1 = self.w1_3(w1)
+            # w1 = self.w1_3(w1)
             # w1 = self.w1_4(w1)
             w1 = self.w1_5(w1)
 
             w2 = prob
-            w2 = self.w2_0(prob)
-            w2 = self.w2_0_1(w2)
+            # w2 = self.w2_0(prob)
+            # w2 = self.w2_0_1(w2)
             # w2 = self.w2_0_2(w2)
             w2 = self.w2_1(w2)
             w2 = self.w2_2(w2)
-            w2 = self.w2_3(w2)
+            # w2 = self.w2_3(w2)
             # w2 = self.w2_4(w2)
             w2 = self.w2_5(w2)
 
@@ -267,12 +278,17 @@ class PowerActorNetwork(keras.Model):
             self.chkpt_dir, self.model_name + "_ddpg.h5"
         )
 
+        self.activation = PReLU()
+        self.activation1 = PReLU()
+
         # self.bn0 = BatchNormalization()
-        self.fc1 = Dense(128, activation="relu")
+        # self.fc0 = Dense(512, activation=self.activation)
+        self.fc1 = Dense(128, activation=self.activation1)
         self.fc2 = Dense(num_of_users - 1, activation="sigmoid")
 
     def call(self, state):
         # power = self.bn0(state)
+        # power = self.fc0(state)
         power = self.fc1(state)
         power = self.fc2(power)
         return power
@@ -309,23 +325,20 @@ class Actor(keras.Model):
         self.activation1 = PReLU()
         self.activation2 = PReLU()
 
-        leaky_activation = LeakyReLU(alpha=0.4)
-        leaky_activation1 = LeakyReLU(alpha=0.4)
-
         self.fc1 = Dense(
-            1024,
+            1024 + (num_of_elements - 10) * 2,
             activation=self.activation,
         )
 
         self.fc2 = Dense(
-            600,
+            600 + (num_of_elements - 10) * 1,
             activation=self.activation1,
         )
 
-        # self.fc3 = Dense(
-        #     512,
-        #     activation=self.activation2,
-        # )
+        self.fc3 = Dense(
+            256,
+            activation=self.activation2,
+        )
 
         # self.fc2 = Dense(128, activation="relu")
         # # self.fc3 = Dense(128, activation="relu")
@@ -344,7 +357,7 @@ class Actor(keras.Model):
         phase = state
         if self.dummy_actor_input:
             phase = tf.ones_like(phase)
-            
+
         # phase = self.bn0(state)
 
         # phase = self.fc_00(phase)
@@ -359,9 +372,9 @@ class Actor(keras.Model):
 
         phase = self.fc1(phase)
 
-        # phase = self.drop2(phase)
+        # # phase = self.drop2(phase)
         phase = self.fc2(phase)
-        # phase = self.fc3(phase)
+        phase = self.fc3(phase)
         # phase = self.fc4(phase)
 
         if self.last_layer_activation == "sigmoid":

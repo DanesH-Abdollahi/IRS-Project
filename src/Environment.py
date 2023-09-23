@@ -219,6 +219,13 @@ class Environment:
         elif self.reward_function == "man9":
             reward = (weighted_reward**2) * (product_rate ** (1 / 2))
 
+        elif self.reward_function == "man10":
+            if weighted_reward >= 1:
+                reward = weighted_reward
+
+            else:
+                reward = -1 / weighted_reward
+
         return reward
 
     def State(self) -> None:

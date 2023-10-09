@@ -20,6 +20,8 @@ class Environment:
         reward_function: str,
         state_dB: bool,
         without_irs: bool,
+        double_reflection: bool,
+        no_irs: bool,
     ) -> None:
         self.N = num_of_antennas  # Number of Antennas
         self.M1 = num_of_irs1  # Number of Elements of IRS1
@@ -42,17 +44,30 @@ class Environment:
         self.iter = 0
         self.max_sumrate = 0
         self.without_irs = without_irs
+        self.double_reflection = double_reflection
+        # self.last = False
+        # self.last_out = []
 
         # Generate Random Channel Coefficient Matrix(es)
         self.Hs1 = Random_Complex_Mat(self.M1, self.N) / self.irs1_to_antenna
         self.Hs2 = Random_Complex_Mat(self.M2, self.N) / self.irs2_to_antenna
-        self.H12 = Random_Complex_Mat(self.M2, self.M1) / self.irs1_to_irs2
-        self.H21 = np.conjugate(np.transpose(self.H12))
+
+        if self.double_reflection:
+            self.H12 = Random_Complex_Mat(self.M2, self.M1) / self.irs1_to_irs2
+            self.H21 = np.conjugate(np.transpose(self.H12))
+
+        else:
+            self.H12 = np.zeros((self.M2, self.M1), dtype=complex)
+            self.H21 = np.zeros((self.M1, self.M2), dtype=complex)
 
         # Generate Initial IRS Coefficient Matrix(es)
-        self.Psi1 = np.diag(Random_Complex_Mat(1, self.M1)[0])
-        self.Psi2 = np.diag(Random_Complex_Mat(1, self.M2)[0])
-        # self.W = np.zeros((self.N, 2), dtype=complex)
+        if no_irs:
+            self.Psi1 = np.diag(np.zeros((1, self.M1), dtype=complex)[0])
+            self.Psi2 = np.diag(np.zeros((1, self.M2), dtype=complex)[0])
+
+        else:
+            self.Psi1 = np.diag(Random_Complex_Mat(1, self.M1)[0])
+            self.Psi2 = np.diag(Random_Complex_Mat(1, self.M2)[0])
 
     def CreateUser(
         self,

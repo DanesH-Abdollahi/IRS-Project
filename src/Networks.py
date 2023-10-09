@@ -273,17 +273,17 @@ class PowerActorNetwork(keras.Model):
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
         self.model_name = name
-        self.chkpt_dir = chkpt_dir
-        self.checkpoint_file = os.path.join(
-            self.chkpt_dir, self.model_name + "_ddpg.h5"
-        )
+        # self.chkpt_dir = chkpt_dir
+        # self.checkpoint_file = os.path.join(
+        #     self.chkpt_dir, self.model_name + "_ddpg.h5"
+        # )
 
-        self.activation = PReLU()
-        self.activation1 = PReLU()
+        # self.activation = PReLU()
+        # self.activation1 = PReLU()
 
         # self.bn0 = BatchNormalization()
         # self.fc0 = Dense(512, activation=self.activation)
-        self.fc1 = Dense(128, activation=self.activation1)
+        self.fc1 = Dense(128, activation="relu")
         self.fc2 = Dense(num_of_users - 1, activation="sigmoid")
 
     def call(self, state):

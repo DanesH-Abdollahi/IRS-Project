@@ -24,6 +24,9 @@ class User:
         self.h1u = 0
         self.h2u = 0
         self.w = 0
+        self.hsu_tmp = 0
+        self.h1u_tmp = 0
+        self.h2u_tmp = 0
 
     def GenerateMatrixes(self, env) -> None:
         if self.los_to_antenna:

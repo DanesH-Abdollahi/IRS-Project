@@ -16,14 +16,17 @@ class User:
         self.los_to_irs1 = los_to_irs1         # Line of sight to IRS1
         self.los_to_irs2 = los_to_irs2         # Line of sight to IRS2
         self.penalty = penalty                 # Penalty for not meeting SINR threshold
-        self.allocated_power = allocated_power # Power allocated to user
+        self.allocated_power = allocated_power  # Power allocated to user
         self.sinr_threshold = sinr_threshold   # dB
         self.weight = weight                   # Weight of user
-        
+
         self.hsu = 0
         self.h1u = 0
         self.h2u = 0
         self.w = 0
+        self.hsu_tmp = 0
+        self.h1u_tmp = 0
+        self.h2u_tmp = 0
 
     def GenerateMatrixes(self, env) -> None:
         if self.los_to_antenna:
@@ -44,5 +47,9 @@ class User:
         else:
             self.h2u = np.zeros((1, env.M2))
 
-        self.w = (Random_Complex_Mat(env.N, 1) /
-                  sqrt(env.N)) * self.allocated_power
+        # self.w = (Random_Complex_Mat(env.N, 1) /
+        #           sqrt(env.N)) * self.allocated_power
+
+        self.w = Random_Complex_Mat(env.N, 1)
+        self.w = self.w / np.linalg.norm(self.w)
+        self.w = self.w * sqrt(env.transmitted_power * self.allocated_power)

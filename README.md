@@ -50,19 +50,19 @@
 
 <img
   src="./results/all_sumrate1.svg"
-  alt="Different Reward Functions"
+  alt=""
   title="Finding Proper Reward Function"
   style="location: center">
 
 <img
     src="./results/all_u1_rate1.svg"
-    alt="Different Reward Functions"
+    alt=""
     title="Finding Proper Reward Function"
     style="location: center">
 
 <img
     src="./results/all_u2_rate1.svg"
-    alt="Different Reward Functions"
+    alt=""
     title="Finding Proper Reward Function"
     style="location: center">
 
@@ -72,7 +72,7 @@
 
 <img
   src="./results/inner_compare_sumrate.svg"
-  alt="Different Reward Functions"
+  alt=""
   title="Finding Proper Reward Function"
   style="location: center">
 
@@ -82,7 +82,7 @@
 
 <img
   src="./results/Final_Comparison.png"
-  alt="Different Reward Functions"
+  alt=""
   title="Finding Proper Reward Function"
   style="location: center">
 
